@@ -1,0 +1,37 @@
+# Business case assumptions. Every number here is an assumption (illustrative), not a measurement.
+# tools/value_model_business_case.py multiplies them with two measured inputs per lever:
+#   - its annual cost in the synthetic data (gold tables, the 365 days of history);
+#   - its backtest reduction: 1 - ML / incumbent in bigbox_fe_bar.ml.backtest_daily (the 8 held-out
+#     weeks, same true demand and supplier draws, ML policy at the service level in src/ml/policy.yaml).
+# capture rate = backtest reduction x kept, where kept = the share of the simulated reduction that
+# production keeps. Company revenue scales and the carrying-cost rate come from assumptions.yaml.
+levers:
+  lost_margin:
+    name: Gross margin lost to stockouts
+    kept: {low: 0.25, mid: 0.5, high: 0.75}   # mid = assumptions.yaml realisation (tests check it)
+    why:
+      low: planners act on a quarter of the gain (overrides, partial roll-out) or suppliers short-ship the extra orders
+      mid: half the simulated gain survives adoption, overrides and supplier limits, as in the value model (03b)
+      high: most queue items are approved as recommended every night and suppliers fill at today's rate
+  waste:
+    name: Waste written off (expired + damaged, at cost)
+    kept: {low: 0.2, mid: 0.4, high: 0.6}
+    why:
+      low: the cut comes from removing safety stock on fast perishables, whose stockouts rise in the backtest, so planners override much of it back
+      mid: planners undo the cuts on the perishables whose stockouts they see in the queue and keep the rest, a little under half
+      high: planners trust the shelf-life cap and keep most of it
+  carrying:
+    name: Carrying cost of inventory held
+    kept: {low: 0.25, mid: 0.5, high: 0.75}   # tied to lost_margin: the extra stock buys the extra availability
+    why:
+      low: partial adoption places fewer of the extra orders, so less of the backtest's extra stock is held
+      mid: half the backtest's extra stock is held, in step with the margin gain it buys
+      high: near-full adoption holds most of the backtest's extra stock, the price of the higher availability
+# How a dollar lever maps to a stakeholder KPI (each is an assumption; rendered in the business case).
+links:
+  - A KPI moves by its backtest change x the kept share of its lever (lost-margin kept for availability and lost units, waste kept for shrink, carrying kept for inventory).
+  - Recovered sales are valued at list price minus unit cost (gross margin), never at revenue; waste avoided lowers cost of goods one for one.
+  - Losses scale with revenue - the same share of revenue at every company size (the modelled slice of 100 stores and 300 SKUs stands for the whole company).
+  - Online short-shipped units fall by the same share as lost units (online orders ship from store stock).
+  - The kept share equals the share of tonight's queue items that planners action as recommended.
+  - Working capital is average inventory at cost; it changes by the backtest change in closing inventory at cost x the kept share.

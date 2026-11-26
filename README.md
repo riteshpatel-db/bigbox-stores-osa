@@ -5,14 +5,20 @@
 On the same simulated demand and suppliers, the ML reorder policy cut **lost sales to stockouts by
 33.7 %**, raised **on-shelf availability by 2.16 points** and cut **perishable shrink by 33.9 %**
 against the incumbent nightly policy over the 8 held-out weeks
-([backtest](evidence/03b_backtest_value.md)). At a ~$1B retailer and 50 % realisation that is worth
-about **$11.0M a year** ([value model](evidence/03b_backtest_value.md)), for a run cost of
-$218,470 a year, **50 $ of value per $ of run cost** ([cost](evidence/07_cost.md)).
+([backtest](evidence/03b_backtest_value.md)). At a ~$1B retailer the
+[business case](docs/BUSINESS_CASE.md) puts the value at about **$7.1M a year** in the mid case ($3.5M
+low, $11M high; illustrative). It applies those reductions to the full year's measured losses, values
+lost sales at margin, and uses an assumed capture rate per lever. The run cost is about $220k a year, so
+that is **32 $ of value per $ of run cost** ([cost](evidence/07_cost.md)). The value model in 03b
+annualises the 8 held-out weeks instead and gives $11.0M; section 6 of the business case explains the
+difference.
 **Time to value:** a stockout reaches the planner's queue within one 15-minute refresh (one run
 took about 8 minutes from new files to the Lakebase queue, [evidence](evidence/04_lakebase.md)),
 instead of the next morning. Everything is deployed: pipeline, governance, model and endpoint,
 Lakebase, Genie (25 of 25 benchmark questions in each of 3 runs, [evidence](evidence/05_genie.md))
 and the app, smoke-tested on its deployed URL ([evidence](evidence/06_app.md)).
+The business case also shows the mid case in each stakeholder's KPIs and what would make the numbers
+wrong.
 
 All data is synthetic, from a seeded generator. Bigbox Stores is fictional; no real customer data or
 names are used. All results are on simulated data; see "Out of scope" for what that means.
@@ -65,6 +71,7 @@ incremental scoring → Lakebase sync, with the decisions write-back in parallel
 | E Genie | Curated space over the metric views and gold tables; 25 questions scored against reference SQL, 3 runs, plus an ablation | [05](evidence/05_genie.md) |
 | F App | AppKit app: KPI header, at-risk queue, what-if on the endpoint, approve / override / reject, Genie; deployed with 4 bundle bindings and a least-privilege service principal | [06](evidence/06_app.md) |
 | Cost | Build cost to date, unit costs, monthly run cost, ROI, from billing at list price | [07](evidence/07_cost.md) |
+| Business case | Each loss lever's measured annual cost, capture low / mid / high with reasons, share of revenue and sensitivity, the mid case in each stakeholder's KPIs, run cost, what would make it wrong (modelled parts marked illustrative) | [BUSINESS_CASE](docs/BUSINESS_CASE.md), [CSV](evidence/metrics/value_model.csv) |
 
 [`evidence/INDEX.md`](evidence/INDEX.md) lists every evidence file with its claim and size.
 
@@ -162,14 +169,15 @@ rates, and the live drip. The run in [00](evidence/00_raw_data.md) produced 100 
 | `src/pipeline/` | Lakeflow pipeline `bigbox_osa_pipeline`: `bronze.py`, `silver.py`, `gold.py` |
 | `src/governance/` | Unity Catalog SQL in order: access model, stage-C and write-back tables, serving and metric views, comments and tags, grants, the app's access |
 | `src/ml/` | `bigbox_ml/` (features, policy, backtest), `policy.yaml`, notebooks `01`–`05` with the outputs of the evidence run |
-| `src/value/` | Value and cost models with their named assumptions |
+| `src/value/` | Value, cost and business-case models with their named assumptions |
 | `src/lakebase/` | Postgres DDL and grants, the `sync` and `write_back` tasks, check notebooks with outputs |
 | `src/genie/` | Space source and exported `space.json`, `space.py`, `questions.yaml`, `score.py` |
 | `src/app/` | AppKit app `bigbox-ops-app` and its `app.yaml` |
 | `scripts/` | `deploy.sh`, `prepush_check.sh`, `check_evidence.py`, `smoke_test_app.sh`, setup and evidence scripts |
+| `tools/` | `value_model_business_case.py`: writes `docs/BUSINESS_CASE.md` and `evidence/metrics/value_model.csv` |
 | `tests/` | Generator determinism and conservation, policy and backtest, value and cost models, Genie scorer |
 | `results/` | Raw Genie scoring runs and the app smoke test |
-| `evidence/` | `INDEX.md` and one text file per stage, copied from real runs |
+| `evidence/` | `INDEX.md`, one text file per stage copied from real runs, and `metrics/value_model.csv` |
 | `deck/` | `deck.md` for the COO and the Director of Operations |
 | `docs/` | `HANDOFF.md` (status, ids, traps), `PROVENANCE.md` (resources, preflight) |
 
@@ -392,5 +400,19 @@ warehouse is the largest monthly item; a smaller warehouse for the KPI header an
 ```bash
 uv run python scripts/evidence_cost.py --refresh-run <bigbox_refresh run> --train-run <bigbox_ml_train run> \
     --warehouse-id <id> --out evidence/07_cost.md
+uv run python scripts/evidence_index.py && uv run python scripts/check_evidence.py
+```
+
+### Business case
+
+`tools/value_model_business_case.py` measures each loss lever's annual cost over the 365 days of
+history (gold tables and metric views) and its reduction in the backtest. It multiplies them by the
+capture assumptions in `src/value/business_case.yaml` (`src/value/business_case.py`), reuses the
+billing measurement of `scripts/evidence_cost.py` for the run cost, and writes
+[`docs/BUSINESS_CASE.md`](docs/BUSINESS_CASE.md) and `evidence/metrics/value_model.csv`.
+
+```bash
+uv run python tools/value_model_business_case.py --refresh-run <bigbox_refresh run> \
+    --train-run <bigbox_ml_train run> --warehouse-id <id>
 uv run python scripts/evidence_index.py && uv run python scripts/check_evidence.py
 ```

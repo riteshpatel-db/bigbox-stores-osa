@@ -28,6 +28,7 @@ CLAIMS = {
     "05_genie.md": "Genie answers the benchmark questions against reference SQL in three runs; ablation without curation",
     "06_app.md": "The deployed app, its bindings and least privilege, a real session and the HTTP smoke test",
     "07_cost.md": "What the build cost, unit costs, the monthly run cost and the ROI",
+    "metrics/value_model.csv": "Every number in docs/BUSINESS_CASE.md, one row each, marked measured or illustrative",
 }
 
 
@@ -50,6 +51,15 @@ def main() -> int:
         run = run.replace(" (UTC)", "").split("; evidence")[0]
         rows.append(
             f"| {stage} | [{f.name}]({f.name}) | {CLAIMS.get(f.name, title)} | {n_objs} | {run} | {len(text):,} |"
+        )
+    # Machine-readable metrics: no header of their own; their producer writes the run details.
+    for f in sorted(EVIDENCE.glob("metrics/*.csv")):
+        text = f.read_text()
+        total += len(text)
+        files.append(f)
+        name = f.relative_to(EVIDENCE).as_posix()
+        rows.append(
+            f"| metrics | [{name}]({name}) | {CLAIMS.get(name, name)} | - | in docs/BUSINESS_CASE.md's header | {len(text):,} |"
         )
     md = [
         "# Evidence index",

@@ -1,0 +1,58 @@
+section,metric,case,value,unit,basis,source
+lever,lost_margin annual cost (slice),,6900000,usd/yr,measured,"gold.forecast lost units x (price - cost), 365 days"
+lever,lost_margin backtest reduction,,0.332,share,measured,ml.backtest_daily
+lever,lost_margin capture rate,low,0.083,share,illustrative,kept x backtest reduction
+lever,lost_margin value at $1.0B,low,2000000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,lost_margin capture rate,mid,0.17,share,illustrative,kept x backtest reduction
+lever,lost_margin value at $1.0B,mid,4100000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,lost_margin capture rate,high,0.25,share,illustrative,kept x backtest reduction
+lever,lost_margin value at $1.0B,high,6100000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,waste annual cost (slice),,6620000,usd/yr,measured,"gold.store_sku_daily (expired + damaged) x cost, 365 days"
+lever,waste backtest reduction,,0.325,share,measured,ml.backtest_daily
+lever,waste capture rate,low,0.065,share,illustrative,kept x backtest reduction
+lever,waste value at $1.0B,low,1500000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,waste capture rate,mid,0.13,share,illustrative,kept x backtest reduction
+lever,waste value at $1.0B,mid,3100000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,waste capture rate,high,0.19,share,illustrative,kept x backtest reduction
+lever,waste value at $1.0B,high,4600000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,carrying annual cost (slice),,514000,usd/yr,measured x assumed rate,gold.store_sku_daily mean inventory at cost x carrying rate
+lever,carrying backtest reduction,,-0.0463,share,measured,ml.backtest_daily
+lever,carrying capture rate,low,-0.012,share,illustrative,kept x backtest reduction
+lever,carrying value at $1.0B,low,-21000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,carrying capture rate,mid,-0.023,share,illustrative,kept x backtest reduction
+lever,carrying value at $1.0B,mid,-42000,usd/yr,illustrative,capture x annual cost x revenue scale
+lever,carrying capture rate,high,-0.035,share,illustrative,kept x backtest reduction
+lever,carrying value at $1.0B,high,-64000,usd/yr,illustrative,capture x annual cost x revenue scale
+revenue,slice revenue,,281000000,usd/yr,measured,"gold.store_sku_daily, 365 days"
+total,value as share of revenue,low,0.0035,share,illustrative,levers / slice revenue
+total,value as share of revenue,mid,0.0071,share,illustrative,levers / slice revenue
+total,value as share of revenue,high,0.011,share,illustrative,levers / slice revenue
+sensitivity,value at $800M,low,2800000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $800M,mid,5700000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $800M,high,8500000,usd/yr,illustrative,linear in revenue
+sensitivity,run cost at $800M,,200000,usd/yr,illustrative,measured unit costs x cost_assumptions.yaml
+sensitivity,value at $1.0B,low,3500000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $1.0B,mid,7100000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $1.0B,high,11000000,usd/yr,illustrative,linear in revenue
+sensitivity,run cost at $1.0B,,220000,usd/yr,illustrative,measured unit costs x cost_assumptions.yaml
+sensitivity,value at $1.2B,low,4300000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $1.2B,mid,8500000,usd/yr,illustrative,linear in revenue
+sensitivity,value at $1.2B,high,13000000,usd/yr,illustrative,linear in revenue
+sensitivity,run cost at $1.2B,,240000,usd/yr,illustrative,measured unit costs x cost_assumptions.yaml
+cost,build cost to date,,183.52,usd,measured,system.billing.usage x list_prices
+cost,one refresh run,,0.72,usd,measured,system.billing.usage x list_prices
+kpi,on-shelf availability,today,0.943,share,measured,"serving.availability_kpis, 365 days"
+kpi,on-shelf availability,mid,0.954,share,illustrative,link 1
+kpi,in-stock at close,today,0.928,share,measured,"serving.availability_kpis, 365 days"
+kpi,in-stock at close,mid,0.937,share,illustrative,link 1
+kpi,lost units share of demand,today,0.0284,share,measured,"serving.availability_kpis, 365 days"
+kpi,lost units share of demand,mid,0.03,share,illustrative,link 1
+kpi,perishable shrink,today,0.109,share,measured,"serving.availability_kpis, 365 days"
+kpi,perishable shrink,mid,0.0945,share,illustrative,link 1
+kpi,online fill rate,today,0.943,share,measured,"serving.availability_kpis, 365 days"
+kpi,online fill rate,mid,0.94,share,illustrative,"links 1, 4"
+kpi,queue items tonight,today,5133,items,measured,gold.recommendations
+kpi,decisions recorded,today,27,decisions,measured,gold.reorder_decisions
+kpi,gross margin at $1.0B,mid,7100000,usd/yr,illustrative,levers
+kpi,working capital change at $1.0B,mid,210000,usd,illustrative,link 6
+kpi,value per $ of run cost at $1.0B,mid,32,ratio,illustrative,levers / run cost

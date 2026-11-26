@@ -17,10 +17,14 @@ against today's nightly policy ([backtest](../evidence/03b_backtest_value.md)):
 | in-stock at close | 90.94 % | 92.92 % | +1.98 pts |
 | perishable shrink | 10.56 % | 6.98 % | −33.9 % |
 
-- **Value:** about **$11.0M a year** at a ~$1B retailer and 50 % realisation (margin on recovered
-  sales plus waste avoided) ([value model](../evidence/03b_backtest_value.md)).
-- **Run cost and ROI:** $218,470 a year at company scale (modelled: a refresh every 15 minutes, the app around the clock, the endpoint and the SQL warehouse 12 hours a day; the shared Large warehouse is the largest item); **50 $ of value per $** of run
-  cost ([cost](../evidence/07_cost.md)).
+- **Value (illustrative):** about **$7.1M a year** at a ~$1B retailer in the mid case ($3.5M low, $11M
+  high). That is the full year's measured losses at margin (stockouts, waste, carrying) times an assumed
+  capture rate per lever ([business case](../docs/BUSINESS_CASE.md)). Annualising the 8 held-out weeks
+  instead gives $11.0M ([value model](../evidence/03b_backtest_value.md)).
+- **Watch-outs, from the same case:** the policy holds more inventory, not less; it loses more cheap
+  units while saving dearer ones; adoption is not yet measured.
+- **Run cost and ROI:** $218,468 a year at company scale (modelled: a refresh every 15 minutes, the app around the clock, the endpoint and the SQL warehouse 12 hours a day; the shared Large warehouse is the largest item); **32 $ of value per $** of run
+  cost in the mid case ([cost](../evidence/07_cost.md), [business case](../docs/BUSINESS_CASE.md)).
 - **Time to value:** a stockout reaches the planner's queue within one 15-minute refresh; one run took
   about 8 minutes from new files to the queue ([Lakebase](../evidence/04_lakebase.md)). Today it is
   seen the next morning.
@@ -85,7 +89,8 @@ Deployed and tested on its live URL, including a real session ([app](../evidence
   what holds by design.
 - **Platform friction:** automatic retries despite "no retries", a CLI too old for one app binding,
   the app's first build needing grants that only exist after it is created; each fixed in the deploy.
-- **Open:** the app accepts an "override" equal to the recommendation; to be rejected server-side.
+- **Known limitation:** the app accepts an "override" equal to the recommendation (one such decision is
+  recorded); left as is.
 
 ---
 

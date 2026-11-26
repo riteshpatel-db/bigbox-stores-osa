@@ -14,6 +14,7 @@ Each file is text copied from real runs (header: command, run time, workspace, U
 | 04 | [04_lakebase.md](04_lakebase.md) | Synced table parity and latency, decisions round-tripped from Postgres to Delta | 4 | refresh 2026-11-25T03:06:32Z → 2026-11-25T03:14:37Z; check 2026-11-25T03:14:51Z → 2026-11-25T03:19:33Z | 5,334 |
 | 05 | [05_genie.md](05_genie.md) | Genie answers the benchmark questions against reference SQL in three runs; ablation without curation | 7 | 2026-11-25T04:18:32Z → 2026-11-25T04:36:00Z | 8,465 |
 | 06 | [06_app.md](06_app.md) | The deployed app, its bindings and least privilege, a real session and the HTTP smoke test | 5 | deployment 2026-11-25T05:47:56Z; smoke test 2026-11-25T05:15:07Z → 2026-11-25T05:16:08Z | 7,138 |
-| 07 | [07_cost.md](07_cost.md) | What the build cost, unit costs, the monthly run cost and the ROI | 4 | billing data through 2026-11-26T01:00:00.000Z (usage date 2026-11-26) | 4,799 |
+| 07 | [07_cost.md](07_cost.md) | What the build cost, unit costs, the monthly run cost and the ROI | 4 | billing data through 2026-11-26T05:20:00.000Z (usage date 2026-11-26) | 4,777 |
+| metrics | [metrics/value_model.csv](metrics/value_model.csv) | Every number in docs/BUSINESS_CASE.md, one row each, marked measured or illustrative | - | in docs/BUSINESS_CASE.md's header | 4,898 |
 
-Totals: 11 evidence files (limit 30, this index included: 12); largest 8,721 chars (limit 9,000); 70,265 chars in total (limit 90,000, before this index).
+Totals: 12 evidence files (limit 30, this index included: 13); largest 8,721 chars (limit 9,000); 75,141 chars in total (limit 90,000, before this index).

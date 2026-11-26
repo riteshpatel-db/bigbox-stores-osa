@@ -40,6 +40,7 @@ testpaths = ["tests"]
 "scripts/evidence_app.py" = ["E501"]
 "scripts/evidence_cost.py" = ["E501"]
 "scripts/evidence_index.py" = ["E501"]
+"tools/value_model_business_case.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["bigbox_gen", "bigbox_lakebase", "bigbox_ml", "cost_model", "value_model"]
+known-first-party = ["bigbox_gen", "bigbox_lakebase", "bigbox_ml", "business_case", "cost_model", "value_model"]

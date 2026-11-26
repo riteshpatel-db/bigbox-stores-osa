@@ -49,6 +49,7 @@ in sync: upload with `workspace import --overwrite`, then export and `cmp` to ve
 | E Genie | **built**: space "Bigbox Stores - Store Ops", 25 questions with reference SQL, 3 scored runs 25/25 each (ablation without curation 16/25) | `evidence/05_genie.md`, raw runs `results/genie/` |
 | F App | **built and deployed**: `bigbox-ops-app` (AppKit), 4 bundle bindings, least-privilege SP, real browser session (5 decisions, 4 Genie questions), HTTP smoke test PASS | `evidence/06_app.md`, `results/app/smoke_test.json` |
 | Cost | **built**: billing × list price, attribution by resource id (tag alone catches 4 %), unit costs, monthly model, ROI | `evidence/07_cost.md` |
+| Business case | **built**: `tools/value_model_business_case.py` writes `docs/BUSINESS_CASE.md` + `evidence/metrics/value_model.csv` (measured levers, low/mid/high capture, stakeholder KPIs, run cost, risks) | `docs/BUSINESS_CASE.md`, `evidence/metrics/value_model.csv` |
 | README / evidence index / deck | **written**: README outcome-first (9 sections + stage details), `evidence/INDEX.md` generated, `deck/deck.md` | `README.md`, `evidence/INDEX.md`, `deck/deck.md` |
 
 ## Live resources
@@ -200,19 +201,18 @@ Add each later stage's run command here once that stage exists.
    workspace inventory with `../working/list_inventory.sh > /tmp/inv.txt`, diff it against
    `../working/do_not_touch.private.txt`, and refresh that file (keep the old copy).
 2. Every P0 item has evidence (README, `evidence/INDEX.md`, `deck/deck.md` included). Remaining, in order:
-   - the first commit, `prepush_check.sh` and (only on request) the push: now unblocked (denylist written, `uv.lock` gitignored); waits only for the user's go-ahead;
-   - follow-up from stage F: reject an "override" equal to the recommendation in `src/app/server/routes/ops.ts`,
-     redeploy (`databricks bundle run bigbox_ops_app` after `apps start`), re-run `smoke_test_app.sh` and
-     `evidence_app.py` (the session events stay in the logs only for a while; keep the current 06 if they are gone);
+   - committed and pushed to the public repo (`main`); any further push only on request, after `prepush_check.sh`;
+   - the stage-F override follow-up (reject an "override" equal to the recommendation) was declined by the user on
+     2026-11-26: a known limitation, not a to-do;
    - P1 items only if the user asks (BUILD_PROMPT §7), cheapest first.
    Regenerate the index whenever an evidence file changes: `uv run python scripts/evidence_index.py &&
    uv run python scripts/check_evidence.py`. Cost evidence: `uv run python scripts/evidence_cost.py --refresh-run
-   387755722703731 --train-run 311784219823432 --warehouse-id d5b43df809d40fcf --out evidence/07_cost.md`.
+   387755722703731 --train-run 311784219823432 --warehouse-id d5b43df809d40fcf --out evidence/07_cost.md`. Business case (same run ids, after 07): `uv run python
+   tools/value_model_business_case.py --refresh-run 387755722703731 --train-run 311784219823432 --warehouse-id
+   d5b43df809d40fcf`.
 3. The app and the warehouse were stopped on 2026-11-25 at the user's request; `databricks apps start
    bigbox-ops-app` before a demo (warm the endpoint with one what-if first: the first call after scale-to-zero took
    ~58 s).
-4. When the user supplies the denylist and approves it: the first commit, then `prepush_check.sh`, then (only on
-   explicit request) the push.
 
 ## Traps that already cost time
 
@@ -486,6 +486,7 @@ Stage C (run `311784219823432`; values copied from the evidence files, which are
 | parity batch vs endpoint, 500 rows | max abs diff 0.0 | `03_ml.md` |
 | backtest at 0.95 vs incumbent: lost sales $ / OSA / perishable shrink | −33.7 % / +2.16 pts / −33.9 % | `03b_backtest_value.md` |
 | value at ~$1B, 50 % realisation (margin + waste + carrying) | ~$11.0M / yr | `03b_backtest_value.md` |
+| business case at ~$1B, low / mid / high (illustrative; full-year measured losses x capture) | $3.5M / $7.1M / $11M per yr | `docs/BUSINESS_CASE.md` |
 | lost-sales estimate vs ground truth (holdout) | −20 % (estimate is low) | `03_ml.md` |
 
 Stage D (check run `909089715190901`, refresh run `387755722703731`; values from `04_lakebase.md`):
@@ -502,5 +503,6 @@ Stage E (`05_genie.md`): 25/25 in each of 3 runs, no flips; data sources alone 1
 Stage F (`06_app.md`): queue from Lakebase in 18–94 ms through the app; what-if ~100 ms warm, endpoint baseline =
 batch forecast; smoke test PASS (Postgres 21 → 22, Delta 21 → 22 after write-back).
 
-Cost (`07_cost.md`): build to date $176.11 at list price (the shared Large warehouse $167.09 of it); one refresh
-$0.72 ($2.58 at company scale); modelled run cost $218,470 a year at company scale; ROI 50 $ of value per $.
+Cost (`07_cost.md`, billing through 2026-11-26): build to date $183.52 at list price (the shared Large warehouse
+$174.46 of it); one refresh $0.72; modelled run cost $218,468 a year at company scale; ROI 50 $ of value per $ on
+the 03b value, 32 $ on the business case's mid case.

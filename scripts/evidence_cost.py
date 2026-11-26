@@ -113,16 +113,10 @@ def sync_update_for(run: dict) -> str | None:
     return json.loads(logs[logs.index("{") :]).get("update_id") if "{" in logs else None
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--refresh-run", required=True)
-    ap.add_argument("--train-run", required=True)
-    ap.add_argument("--warehouse-id", required=True)
-    ap.add_argument("--out", required=True)
-    args = ap.parse_args()
-    sql = Sql(os.environ["DATABRICKS_CONFIG_PROFILE"], args.warehouse_id)
+def measure(sql: Sql, warehouse: str, refresh_run: str, train_run: str) -> dict:
+    """Billing at list price: build cost to date by component, and the measured unit costs."""
     r = resources()
-    u = priced(r, args.warehouse_id)
+    u = priced(r, warehouse)
     latest = sql.rows(
         f"SELECT max(usage_end_time), max(usage_date) FROM {u} WHERE component IS NOT NULL"
     )[0]
@@ -137,21 +131,21 @@ def main() -> int:
     tagged = sum(float(c[4] or 0) for c in comp)
 
     # 2. Unit costs.
-    refresh = cli("jobs", "get-run", args.refresh_run)
+    refresh = cli("jobs", "get-run", refresh_run)
     upd, supd = pipeline_update_for(refresh, r["pipeline"]), sync_update_for(refresh)
     parts = sql.rows(
-        f"""SELECT CASE WHEN usage_metadata.job_run_id = '{args.refresh_run}' THEN 'job tasks (serverless)'
+        f"""SELECT CASE WHEN usage_metadata.job_run_id = '{refresh_run}' THEN 'job tasks (serverless)'
                         WHEN usage_metadata.dlt_update_id = '{upd}' THEN 'pipeline update {upd}'
                         WHEN usage_metadata.dlt_update_id = '{supd}' THEN 'synced-table update {supd}' END,
                    round(sum(usage_quantity), 3), sum(usd)
               FROM {u}
-             WHERE usage_metadata.job_run_id = '{args.refresh_run}'
+             WHERE usage_metadata.job_run_id = '{refresh_run}'
                 OR usage_metadata.dlt_update_id IN ('{upd}', '{supd}')
              GROUP BY 1 ORDER BY 1"""
     )
     refresh_usd = sum(float(p[2] or 0) for p in parts)
     train = sql.rows(
-        f"SELECT round(sum(usage_quantity), 3), sum(usd) FROM {u} WHERE usage_metadata.job_run_id = '{args.train_run}'"
+        f"SELECT round(sum(usage_quantity), 3), sum(usd) FROM {u} WHERE usage_metadata.job_run_id = '{train_run}'"
     )[0]
 
     def per_hour(component: str) -> dict[str, float]:
@@ -183,6 +177,74 @@ def main() -> int:
     # The model assumes continuous use while up, so it takes the busiest (fully used) hour.
     units = cost_model.UnitCosts(
         refresh_usd, float(train[1] or 0), ep["peak_usd"], wh["peak_usd"], app["peak_usd"], lb_day
+    )
+    return {
+        "r": r,
+        "u": u,
+        "latest": latest,
+        "comp": comp,
+        "total": total,
+        "tagged": tagged,
+        "refresh": refresh,
+        "upd": upd,
+        "supd": supd,
+        "parts": parts,
+        "refresh_usd": refresh_usd,
+        "train": train,
+        "ep": ep,
+        "wh": wh,
+        "app": app,
+        "lb_usd": lb_usd,
+        "lb_hours": lb_hours,
+        "lb_day": lb_day,
+        "units": units,
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--refresh-run", required=True)
+    ap.add_argument("--train-run", required=True)
+    ap.add_argument("--warehouse-id", required=True)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    sql = Sql(os.environ["DATABRICKS_CONFIG_PROFILE"], args.warehouse_id)
+    m = measure(sql, args.warehouse_id, args.refresh_run, args.train_run)
+    (
+        latest,
+        comp,
+        total,
+        tagged,
+        refresh,
+        parts,
+        refresh_usd,
+        train,
+        ep,
+        wh,
+        app,
+        lb_usd,
+        lb_hours,
+        lb_day,
+        units,
+    ) = (
+        m[k]
+        for k in (
+            "latest",
+            "comp",
+            "total",
+            "tagged",
+            "refresh",
+            "parts",
+            "refresh_usd",
+            "train",
+            "ep",
+            "wh",
+            "app",
+            "lb_usd",
+            "lb_hours",
+            "lb_day",
+            "units",
+        )
     )
 
     # 3. Monthly model and ROI (value model inputs as in evidence_ml.py).

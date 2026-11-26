@@ -1,4 +1,8 @@
-"""Enforce evidence limits: <=30 files, <=9,000 chars each, <=90,000 in total, header present."""
+"""Enforce evidence limits: <=30 files, <=9,000 chars each, <=90,000 in total, header present.
+
+The limits count every file under evidence/ (including evidence/metrics/*.csv); the header is
+required on the stage markdown files only.
+"""
 
 import sys
 from pathlib import Path
@@ -8,14 +12,14 @@ HEADER = ("- Command:", "- Run at:", "- Workspace:", "- UC objects:", "- Git com
 
 
 def main() -> int:
-    files = sorted(Path("evidence").glob("*.md"))
+    files = sorted(p for p in Path("evidence").rglob("*") if p.is_file())
     problems, total = [], 0
     for f in files:
         text = f.read_text()
         total += len(text)
         if len(text) > MAX_CHARS:
             problems.append(f"{f}: {len(text):,} chars > {MAX_CHARS:,}")
-        if f.name != "INDEX.md":
+        if f.suffix == ".md" and f.parent.name == "evidence" and f.name != "INDEX.md":
             head = text.splitlines()[:8]
             missing = [h for h in HEADER if not any(line.startswith(h) for line in head)]
             if missing:
