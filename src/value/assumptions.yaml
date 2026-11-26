@@ -1,0 +1,10 @@
+# Value model assumptions. Every number here is an assumption, not a measurement; the measured
+# inputs (the backtest deltas and the modelled revenue) come from bigbox_fe_bar.ml.backtest_daily
+# and bigbox_fe_bar.gold.store_sku_daily.
+company_annual_revenue_usd: 1.0e+9  # "~$1B revenue" big-box retailer (scope); the simulation models a slice of it
+realisation: 0.5                    # share of the simulated gain captured in production (adoption, overrides, supplier limits)
+inventory_carrying_cost_rate: 0.20  # per year, on average inventory at cost (capital, space, handling)
+annualise_from_days: 365            # the 8-week holdout is scaled to a year linearly (no seasonality adjustment)
+sensitivity:
+  realisation: [0.25, 0.5, 0.75, 1.0]
+  company_annual_revenue_usd: [0.8e+9, 1.0e+9, 1.2e+9]

@@ -1,0 +1,45 @@
+resources:
+  jobs:
+    bigbox_generate_data:
+      name: bigbox_generate_data
+      description: >-
+        Stage 0: write the seeded synthetic dataset to the landing volume, re-read it with Spark,
+        and re-run the generator in memory to prove every file hash is reproducible.
+      tags:
+        project: bigbox-stores-osa
+        stage: "0-raw-data"
+      timeout_seconds: 3600
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: generator
+          spec:
+            environment_version: "4"
+            dependencies:
+              - pyyaml>=6
+      tasks:
+        - task_key: generate
+          max_retries: 0  # a retry can't succeed: landing is no longer empty
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          environment_key: generator
+          spark_python_task:
+            python_file: ../src/generator/run_generate.py
+            parameters: ["--output", "/Volumes/${var.catalog}/raw/landing"]
+        - task_key: validate
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: generate}]
+          environment_key: generator
+          spark_python_task:
+            python_file: ../src/generator/run_validate.py
+            parameters: ["--landing", "/Volumes/${var.catalog}/raw/landing"]
+        - task_key: determinism_check
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: generate}]
+          environment_key: generator
+          spark_python_task:
+            python_file: ../src/generator/run_generate.py
+            parameters:
+              - "--hash-only"
+              - "--compare"
+              - "/Volumes/${var.catalog}/raw/landing/_manifest/files.json"

@@ -1,0 +1,38 @@
+resources:
+  apps:
+    # AppKit (TypeScript / React) app for the Director of Operations (stage F); source in src/app/.
+    # It runs as its own service principal. The bindings below grant that SP exactly these four
+    # resources; UC and Postgres grants for the data it reads are applied by deploy.sh
+    # (src/governance/06_app_access.sql, src/lakebase/03_app_grants.sql).
+    bigbox_ops_app:
+      name: bigbox-ops-app
+      description: >-
+        Bigbox Stores store operations: KPI header from the metric views, tonight's at-risk queue
+        from Lakebase, a what-if on the demand forecast, approve / override / reject decisions, and
+        the Genie space.
+      source_code_path: ../src/app
+      lifecycle:
+        started: true
+      # Genie's built-in routes run on behalf of the signed-in user, so Genie answers respect the
+      # user's own grants and row filters. Everything else runs as the app's service principal.
+      user_api_scopes:
+        - dashboards.genie
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+        - name: postgres
+          postgres:
+            branch: projects/bigbox-ops/branches/production
+            database: projects/bigbox-ops/branches/production/databases/bigbox-ops
+            permission: CAN_CONNECT_AND_CREATE
+        - name: serving-endpoint
+          serving_endpoint:
+            name: bigbox-demand-forecast
+            permission: CAN_QUERY
+        - name: genie-space
+          genie_space:
+            name: Bigbox Stores - Store Ops
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN

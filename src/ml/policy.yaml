@@ -1,0 +1,10 @@
+# Reorder policy for the ML recommendations and for policy (b) in the backtest.
+# These are modelled choices, not measurements; the backtest shows what they lead to.
+review_days: 1                 # nightly review, the same cadence as the incumbent
+service_level: 0.95            # target probability of not running out before the next delivery
+service_level_sensitivity: [0.90, 0.95, 0.98]   # also replayed in the backtest
+min_presentation_cases: 1      # never let a ranged SKU drop below one case on hand + on order (as incumbent)
+horizon_days: 14               # daily forecasts per decision; covers the longest lead time + review
+at_risk_threshold: 0.5         # stockout_risk at or above this puts the item in the app queue
+overstock_days_nonperishable: 21   # days of supply above this flags overstock (perishables: shelf life)
+slow_mover_units_per_day: 1.0  # backtest segment: mean daily units sold over the 8 weeks before the holdout

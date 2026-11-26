@@ -1,0 +1,31 @@
+# Private working notes and anything marked private (see SCOPE section 9)
+working/
+*.private.*
+
+# Secrets
+.env*
+!.env.example
+
+# Python / uv
+# uv.lock is not committed: it records an internal package-proxy host for every download, which a
+# stranger cannot reach. Versions resolve from pyproject.toml; jobs and the app pin their own.
+uv.lock
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Databricks bundle state
+.databricks/
+
+# Node (AppKit app)
+node_modules/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

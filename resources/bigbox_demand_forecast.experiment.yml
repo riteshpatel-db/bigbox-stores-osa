@@ -1,0 +1,4 @@
+resources:
+  experiments:
+    bigbox_demand_forecast:
+      name: /Users/${workspace.current_user.userName}/bigbox_demand_forecast

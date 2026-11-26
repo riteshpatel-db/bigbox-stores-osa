@@ -1,0 +1,22 @@
+resources:
+  pipelines:
+    bigbox_osa_pipeline:
+      name: bigbox_osa_pipeline
+      catalog: ${var.catalog}
+      schema: bronze
+      serverless: true
+      continuous: false  # triggered by bigbox_refresh, not always-on
+      channel: CURRENT
+      root_path: ../src/pipeline
+      libraries:
+        - glob:
+            include: ../src/pipeline/**
+      configuration:
+        bigbox.catalog: ${var.catalog}
+        bigbox.landing: /Volumes/${var.catalog}/raw/landing
+        # The day the near-real-time POS / online feed replaced the nightly batch: an on-time row
+        # arrives in the nightly extract before this date and within its hour after it.
+        bigbox.live_cutover_date: "2026-10-01"
+      tags:
+        project: bigbox-stores-osa
+        stage: a-lakeflow

@@ -1,0 +1,578 @@
+{
+ "description": "Store operations for Bigbox Stores, a big-box retailer (100 stores, 4 regions, in-store and online): on-shelf availability, stockouts and lost sales, inventory, shrink, sales and returns, supplier fill, tonight's reorder queue and planner decisions. KPIs come from governed metric views.",
+ "serialized_space": {
+  "config": {
+   "sample_questions": [
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000004",
+     "question": [
+      "Which stores had the lowest on-shelf availability yesterday?"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000005",
+     "question": [
+      "Show tonight's top stockout risks for store S010"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000006",
+     "question": [
+      "How did lost sales trend week by week over the last month?"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000007",
+     "question": [
+      "Which suppliers delivered late most often last month?"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000008",
+     "question": [
+      "What share of planner decisions were overrides?"
+     ]
+    }
+   ]
+  },
+  "data_sources": {
+   "tables": [
+    {
+     "column_configs": [
+      {
+       "column_name": "next_due_date",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "next delivery",
+        "next PO due"
+       ]
+      },
+      {
+       "column_name": "on_hand",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "stock on hand",
+        "current stock",
+        "inventory"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.gold.inventory_position"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "priority",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "queue rank",
+        "urgency"
+       ]
+      },
+      {
+       "column_name": "queue_reason",
+       "enable_entity_matching": true,
+       "enable_format_assistance": true,
+       "synonyms": [
+        "alert",
+        "queue type",
+        "risk type"
+       ]
+      },
+      {
+       "column_name": "recommended_order_qty",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "order quantity",
+        "suggested order",
+        "reorder quantity"
+       ]
+      },
+      {
+       "column_name": "stockout_risk",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "OOS risk",
+        "probability of stockout"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.gold.recommendations"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "action",
+       "enable_entity_matching": true,
+       "enable_format_assistance": true,
+       "synonyms": [
+        "decision",
+        "approve override reject"
+       ]
+      },
+      {
+       "column_name": "decided_by",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "planner",
+        "user"
+       ]
+      },
+      {
+       "column_name": "final_qty",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "committed quantity",
+        "ordered quantity"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.gold.reorder_decisions"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "days_late",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "delivery delay",
+        "lateness"
+       ]
+      },
+      {
+       "column_name": "fill_rate",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "supplier fill",
+        "PO fill rate",
+        "replenishment fill"
+       ]
+      },
+      {
+       "column_name": "supplier_id",
+       "enable_entity_matching": true,
+       "enable_format_assistance": true,
+       "synonyms": [
+        "supplier",
+        "vendor"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.gold.replenishment_fill"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "category",
+       "enable_entity_matching": true,
+       "enable_format_assistance": true
+      },
+      {
+       "column_name": "closing_on_hand",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "closing stock",
+        "end of day stock"
+       ]
+      },
+      {
+       "column_name": "stockout_hours",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "OOS hours",
+        "out-of-stock hours"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.gold.store_sku_daily"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "days_of_supply",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "DoS",
+        "days of cover",
+        "cover"
+       ]
+      },
+      {
+       "column_name": "forecast_wape",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "WAPE",
+        "forecast error",
+        "forecast accuracy error"
+       ]
+      },
+      {
+       "column_name": "in_stock_pct",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "in-stock rate",
+        "in stock percentage",
+        "in-stock"
+       ]
+      },
+      {
+       "column_name": "inventory_turns",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "turns",
+        "stock turns"
+       ]
+      },
+      {
+       "column_name": "lost_sales",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "lost revenue",
+        "sales lost to stockouts",
+        "missed sales"
+       ]
+      },
+      {
+       "column_name": "lost_sales_units",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "lost units",
+        "units lost to stockouts"
+       ]
+      },
+      {
+       "column_name": "on_shelf_availability",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "OSA",
+        "on-shelf availability",
+        "shelf availability"
+       ]
+      },
+      {
+       "column_name": "online_fill_rate",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "fill",
+        "fill rate",
+        "online fill"
+       ]
+      },
+      {
+       "column_name": "shrink_pct",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "shrink",
+        "waste rate",
+        "perishable shrink"
+       ]
+      },
+      {
+       "column_name": "stockout_hours",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "OOS hours",
+        "out-of-stock hours",
+        "stockout hours"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.serving.availability_kpis"
+    },
+    {
+     "column_configs": [
+      {
+       "column_name": "avg_discount",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "discount rate",
+        "markdown rate"
+       ]
+      },
+      {
+       "column_name": "avg_order_value",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "AOV",
+        "basket value",
+        "average basket"
+       ]
+      },
+      {
+       "column_name": "channel",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "in-store vs online",
+        "POS or online"
+       ]
+      },
+      {
+       "column_name": "item_return_rate",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "unit return rate",
+        "return rate by units"
+       ]
+      },
+      {
+       "column_name": "total_orders",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "orders",
+        "transactions",
+        "baskets"
+       ]
+      },
+      {
+       "column_name": "total_revenue",
+       "enable_format_assistance": true,
+       "synonyms": [
+        "revenue",
+        "sales",
+        "total sales"
+       ]
+      }
+     ],
+     "identifier": "bigbox_fe_bar.serving.sales_kpis"
+    }
+   ]
+  },
+  "instructions": {
+   "example_question_sqls": [
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000a",
+     "question": [
+      "What were on-shelf availability and lost sales by category yesterday?"
+     ],
+     "sql": [
+      "SELECT category, MEASURE(on_shelf_availability) AS on_shelf_availability,\n",
+      "       MEASURE(lost_sales) AS lost_sales\n",
+      "FROM bigbox_fe_bar.serving.availability_kpis\n",
+      "WHERE date = '2026-09-30'\n",
+      "GROUP BY category\n",
+      "ORDER BY lost_sales DESC"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000b",
+     "question": [
+      "Show the weekly in-stock rate in the WEST region for the last 4 weeks"
+     ],
+     "sql": [
+      "SELECT week, MEASURE(in_stock_pct) AS in_stock_pct\n",
+      "FROM bigbox_fe_bar.serving.availability_kpis\n",
+      "WHERE region = 'WEST' AND date BETWEEN '2026-08-31' AND '2026-09-27'\n",
+      "GROUP BY week\n",
+      "ORDER BY week"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000c",
+     "question": [
+      "What were revenue and orders by store format last quarter?"
+     ],
+     "sql": [
+      "SELECT format, MEASURE(total_revenue) AS total_revenue, MEASURE(total_orders) AS total_orders\n",
+      "FROM bigbox_fe_bar.serving.sales_kpis\n",
+      "WHERE sale_date BETWEEN '2026-07-01' AND '2026-09-30'\n",
+      "GROUP BY format\n",
+      "ORDER BY total_revenue DESC"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000d",
+     "question": [
+      "Which 10 stores had the worst supplier fill on orders due last week?"
+     ],
+     "sql": [
+      "SELECT store_id, sum(received_qty_ea) / sum(ordered_qty) AS replenishment_fill_rate,\n",
+      "       sum(IF(days_late > 0, 1, 0)) AS late_lines\n",
+      "FROM bigbox_fe_bar.gold.replenishment_fill\n",
+      "WHERE due_date BETWEEN '2026-09-21' AND '2026-09-27'\n",
+      "GROUP BY store_id\n",
+      "ORDER BY replenishment_fill_rate\n",
+      "LIMIT 10"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000e",
+     "question": [
+      "Show tonight's top 20 stockout-risk items for store S010"
+     ],
+     "sql": [
+      "SELECT priority, sku_id, category, on_hand, on_order_units, stockout_risk,\n",
+      "       expected_lost_sales, recommended_order_qty\n",
+      "FROM bigbox_fe_bar.gold.recommendations\n",
+      "WHERE store_id = 'S010' AND queue_reason = 'STOCKOUT_RISK'\n",
+      "ORDER BY priority\n",
+      "LIMIT 20"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac90000000f",
+     "question": [
+      "What is the override rate of planner decisions by region?"
+     ],
+     "sql": [
+      "SELECT region, avg(IF(action = 'override', 1.0, 0.0)) AS override_rate, count(*) AS decisions\n",
+      "FROM bigbox_fe_bar.gold.reorder_decisions\n",
+      "GROUP BY region\n",
+      "ORDER BY region"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000010",
+     "question": [
+      "Why did store S007 lose sales last week?"
+     ],
+     "sql": [
+      "SELECT sku_id, category, MEASURE(lost_sales) AS lost_sales,\n",
+      "       MEASURE(stockout_hours) AS stockout_hours, MEASURE(on_shelf_availability) AS on_shelf_availability\n",
+      "FROM bigbox_fe_bar.serving.availability_kpis\n",
+      "WHERE store_id = 'S007' AND date BETWEEN '2026-09-21' AND '2026-09-27'\n",
+      "GROUP BY sku_id, category\n",
+      "ORDER BY lost_sales DESC\n",
+      "LIMIT 10"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000011",
+     "question": [
+      "Which items in the EAST region are out of stock now with no delivery on order?"
+     ],
+     "sql": [
+      "SELECT store_id, sku_id, category, avg_daily_units_28d\n",
+      "FROM bigbox_fe_bar.gold.inventory_position\n",
+      "WHERE region = 'EAST' AND on_hand = 0 AND next_due_date IS NULL\n",
+      "ORDER BY avg_daily_units_28d DESC"
+     ]
+    }
+   ],
+   "join_specs": [
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000001",
+     "left": {
+      "alias": "reorder_decisions",
+      "identifier": "bigbox_fe_bar.gold.reorder_decisions"
+     },
+     "right": {
+      "alias": "recommendations",
+      "identifier": "bigbox_fe_bar.gold.recommendations"
+     },
+     "sql": [
+      "`reorder_decisions`.`store_id` = `recommendations`.`store_id` AND `reorder_decisions`.`sku_id` = `recommendations`.`sku_id`",
+      "--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000002",
+     "left": {
+      "alias": "recommendations",
+      "identifier": "bigbox_fe_bar.gold.recommendations"
+     },
+     "right": {
+      "alias": "inventory_position",
+      "identifier": "bigbox_fe_bar.gold.inventory_position"
+     },
+     "sql": [
+      "`recommendations`.`store_id` = `inventory_position`.`store_id` AND `recommendations`.`sku_id` = `inventory_position`.`sku_id`",
+      "--rt=FROM_RELATIONSHIP_TYPE_ONE_TO_ONE--"
+     ]
+    },
+    {
+     "id": "b26f6cbba7f3494e9a4fbac900000003",
+     "left": {
+      "alias": "replenishment_fill",
+      "identifier": "bigbox_fe_bar.gold.replenishment_fill"
+     },
+     "right": {
+      "alias": "inventory_position",
+      "identifier": "bigbox_fe_bar.gold.inventory_position"
+     },
+     "sql": [
+      "`replenishment_fill`.`store_id` = `inventory_position`.`store_id` AND `replenishment_fill`.`sku_id` = `inventory_position`.`sku_id`",
+      "--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"
+     ]
+    }
+   ],
+   "text_instructions": [
+    {
+     "content": [
+      "You answer questions from store-operations staff at Bigbox Stores, a big-box retailer with 100 stores\n",
+      "(S001..S100) in four regions (CENTRAL, EAST, SOUTH, WEST) and three formats (SUPERCENTER, STANDARD,\n",
+      "COMPACT), selling 300 SKUs in 13 categories in store (POS) and online (ship-from-store).\n",
+      "\n",
+      "WHERE TO LOOK\n",
+      "- KPIs: always use the metric views with MEASURE(): serving.availability_kpis for availability,\n",
+      "  stockouts, lost sales, shrink, days of supply, inventory turns, online fill rate and forecast WAPE;\n",
+      "  serving.sales_kpis for units, revenue, orders, order value, discount, buyers and returns. Never\n",
+      "  re-implement a KPI from the gold tables when a measure exists; ratios must come from the measure.\n",
+      "- Replenishment fill rate (supplier fill) is not in a metric view: compute it on\n",
+      "  gold.replenishment_fill as sum(received_qty_ea) / sum(ordered_qty) over purchase-order lines whose\n",
+      "  due_date is in the period.\n",
+      "- Tonight's reorder queue: gold.recommendations (one row per store x SKU for the latest snapshot).\n",
+      "  Queue items are rows with queue_reason IS NOT NULL ('STOCKOUT_RISK' or 'OVERSTOCK'); priority 1 is\n",
+      "  the most urgent. Money in the queue is recommended_order_value (at cost) or expected_lost_sales.\n",
+      "- Planner decisions on the queue: gold.reorder_decisions (action approve / override / reject).\n",
+      "- Current on hand: gold.inventory_position (latest hourly snapshot per store x SKU).\n",
+      "- Drill-down for \"why\": gold.store_sku_daily (per store x SKU x day: stockout_hours, closing_on_hand,\n",
+      "  received_units, on_promo) and gold.replenishment_fill (late or short supplier deliveries).\n",
+      "\n",
+      "DATES\n",
+      "- The data covers 2025-10-01 to 2026-10-01. The latest day, 2026-10-01, is the current trading day\n",
+      "  and is partial (live data until 14:00). Anchor every relative date on the latest date in the data,\n",
+      "  never on current_date(): today = 2026-10-01, yesterday = 2026-09-30, last week = the last complete\n",
+      "  Monday-Sunday week (2026-09-21 to 2026-09-27), last month = the last complete calendar month\n",
+      "  (September 2026), last quarter = Q3 2026 (2026-07-01 to 2026-09-30), \"the last three months\" =\n",
+      "  the last three complete months (July to September 2026).\n",
+      "- Filter metric views on their date column (date in availability_kpis, sale_date in sales_kpis) with\n",
+      "  BETWEEN on explicit dates.\n",
+      "\n",
+      "ANSWERS\n",
+      "- Return ratios as fractions between 0 and 1 (0.93, not 93); name the column after the KPI.\n",
+      "- \"Top N\" or \"worst N\" means ORDER BY the KPI and LIMIT N; a single \"which ... highest/lowest\" means\n",
+      "  LIMIT 1. Return one row per group asked for and no extra rows.\n",
+      "- Answer \"why\" questions with the KPI first, then the drivers from the drill-down tables.\n",
+      "\n",
+      "TERMS\n",
+      "- OOS = out of stock = stockout. OSA = on_shelf_availability. \"In-stock rate\" = in_stock_pct.\n",
+      "- \"Fill\" or \"fill rate\" alone means online_fill_rate; \"supplier fill\", \"PO fill\" or \"replenishment\n",
+      "  fill\" means the replenishment fill rate above.\n",
+      "- \"Lost sales\" in dollars is lost_sales; in units, lost_sales_units.\n",
+      "- Shrink means perishable shrink_pct (expired + damaged / received, perishables only).\n",
+      "\n",
+      "KPI DEFINITIONS (implemented once in the metric views; use these meanings)\n",
+      "\n",
+      "| KPI | Exact definition |\n",
+      "|---|---|\n",
+      "| `units_sold` | \u03a3 `quantity` on sale lines (POS + online fulfilled), excluding returns |\n",
+      "| `item_revenue` | \u03a3 `quantity \u00d7 unit_price \u2212 discount_amount` on sale lines |\n",
+      "| `total_revenue` | `item_revenue` + \u03a3 online `delivery_fee` |\n",
+      "| `total_orders` | COUNT DISTINCT `order_id` (one POS basket = one order) |\n",
+      "| `avg_order_value` | `total_revenue / total_orders` |\n",
+      "| `avg_discount` | \u03a3 `discount_amount` / \u03a3 `quantity \u00d7 unit_price` (revenue-weighted rate) |\n",
+      "| `unique_buyers` | COUNT DISTINCT non-null `buyer_id` (anonymous POS baskets excluded) |\n",
+      "| `items_returned` | \u03a3 `quantity` on return lines, attributed to the **original sale date** |\n",
+      "| `item_return_rate` | `items_returned / units_sold` |\n",
+      "| `returned_orders` | COUNT DISTINCT `original_order_id` with \u22651 return line |\n",
+      "| `return_rate` | `returned_orders / total_orders` |\n",
+      "| `in_stock_pct` | ranged store-SKU-days with **closing** `on_hand > 0` / ranged store-SKU-days |\n",
+      "| `on_shelf_availability` | ranged store-SKU **open hours** with `on_hand > 0` / ranged store-SKU open hours |\n",
+      "| `online_fill_rate` | \u03a3 **shipped** units / \u03a3 **requested** units on online order lines |\n",
+      "| `replenishment_fill_rate` | \u03a3 **received** eaches / \u03a3 **ordered** eaches on replenishment orders due in the period |\n",
+      "| `lost_sales_units` | \u03a3 over ranged open hours with `on_hand = 0` of the estimated hourly demand (the forecast for that store-SKU-day \u00d7 the hour-of-day profile) |\n",
+      "| `lost_sales` ($) | `lost_sales_units \u00d7 unit_price` |\n",
+      "| `days_of_supply` | closing `on_hand` / mean daily `units_sold` over the trailing 28 days (on uncensored days only) |\n",
+      "| `inventory_turns` | (\u03a3 `units_sold \u00d7 unit_cost`) / (mean daily `on_hand \u00d7 unit_cost`) \u00d7 365 / days in period |\n",
+      "| `shrink_pct` | perishables: \u03a3 units written off (expired + damaged) / \u03a3 units received |\n",
+      "| `forecast_wape` | \u03a3\\|actual \u2212 forecast\\| / \u03a3 actual, over **uncensored** store-SKU-days (`on_hand > 0` all open hours) |"
+     ],
+     "id": "b26f6cbba7f3494e9a4fbac900000009"
+    }
+   ]
+  },
+  "version": 2
+ },
+ "title": "Bigbox Stores - Store Ops",
+ "warehouse_id": "d5b43df809d40fcf"
+}

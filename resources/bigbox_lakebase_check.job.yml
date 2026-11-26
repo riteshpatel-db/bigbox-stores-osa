@@ -1,0 +1,53 @@
+resources:
+  jobs:
+    bigbox_lakebase_check:
+      name: bigbox_lakebase_check
+      description: >-
+        Stage-D evidence run, on demand (no schedule): synced-table status and row-level parity,
+        lookup latency from inside the workspace, evidence decisions inserted into Lakebase
+        app.reorder_decisions, the write-back into gold.reorder_decisions (the same file as
+        bigbox_refresh), id-by-id verification, and a second write-back that must insert 0.
+      tags:
+        project: bigbox-stores-osa
+        stage: d-lakebase
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+      environments:
+        - environment_key: lakebase
+          spec:
+            environment_version: "4"
+            dependencies:
+              - databricks-sdk==0.170.0
+              - psycopg[binary]==3.3.9
+      tasks:
+        - task_key: seed
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          environment_key: lakebase
+          notebook_task:
+            notebook_path: ../src/lakebase/02_check_seed.ipynb
+            base_parameters: {catalog: "${var.catalog}", n_decisions: "20"}
+        - task_key: write_back
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: seed}]
+          environment_key: lakebase
+          spark_python_task:
+            python_file: ../src/lakebase/run_write_back.py
+            parameters: ["--catalog", "${var.catalog}"]
+        - task_key: verify
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: write_back}]
+          environment_key: lakebase
+          notebook_task:
+            notebook_path: ../src/lakebase/03_check_verify.ipynb
+            base_parameters: {catalog: "${var.catalog}"}
+        - task_key: write_back_again
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: verify}]
+          environment_key: lakebase
+          spark_python_task:
+            python_file: ../src/lakebase/run_write_back.py
+            parameters: ["--catalog", "${var.catalog}"]

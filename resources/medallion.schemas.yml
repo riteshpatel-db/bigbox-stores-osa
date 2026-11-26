@@ -1,0 +1,26 @@
+resources:
+  schemas:
+    raw:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: raw
+      comment: Landing zone. Synthetic source-system extracts written as files to a volume.
+    bronze:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: bronze
+      comment: Auto Loader streaming tables, one per source extract, as delivered.
+    silver:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: silver
+      comment: Typed, deduplicated tables; rows failing expectations are quarantined.
+    gold:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: gold
+      comment: Business tables (store x SKU x day, inventory position, KPIs, forecast, recommendations).
+    ml:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: ml
+      comment: Demand model, features and backtest results.
+    serving:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      name: serving
+      comment: Governed views for Genie and the app, plus the metric view.

@@ -1,0 +1,1082 @@
+{
+ "label": "final",
+ "run": 2,
+ "space_id": "01f1e884bece1d39994e9ba5a98ab5f1",
+ "started": "2026-11-25T04:24:32Z",
+ "finished": "2026-11-25T04:30:16Z",
+ "passed": 25,
+ "total": 25,
+ "accuracy": 1.0,
+ "results": [
+  {
+   "id": "q01",
+   "topic": "availability",
+   "question": "What was on-shelf availability by region last week?",
+   "conversation_id": "01f1e8881d421b0faf69bb4932a7f72d",
+   "message_id": "01f1e8881d491d669fc46538b0b5026a",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `region`,\n  MEASURE(`on_shelf_availability`) AS `on_shelf_availability`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-09-21' AND '2026-09-27'\n  AND `region` IS NOT NULL\nGROUP BY ALL\nORDER BY `region` ASC",
+   "genie_text": "Last week, on-shelf availability was highest in **CENTRAL** at **0.9304** and lowest in **SOUTH** at **0.9240**. Across all **4 regions**, results were tightly clustered in a narrow **0.0064** range, indicating broadly consistent shelf availability.\n\n- **CENTRAL:** **0.9304**\n- **WEST:** **0.9290**\n- **EAST:** **0.9286**\n- **SOUTH:** **0.9240**\nWould you like to see on-shelf availability by store format or category for the same period instead?",
+   "error": null,
+   "seconds": 13.4,
+   "reference_rows": 4,
+   "genie_rows": 4,
+   "genie_result_head": {
+    "columns": [
+     "region",
+     "on_shelf_availability"
+    ],
+    "rows": [
+     [
+      "CENTRAL",
+      "0.9304238352596826"
+     ],
+     [
+      "EAST",
+      "0.928565527700165"
+     ],
+     [
+      "SOUTH",
+      "0.9239791536425621"
+     ],
+     [
+      "WEST",
+      "0.9290337964766984"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q02",
+   "topic": "lost sales",
+   "question": "Which stores lost the most sales to stockouts last week and why? Show the top 5.",
+   "conversation_id": "01f1e88825ea194183a99eb9bb186401",
+   "message_id": "01f1e88825f11705a41900441222d083",
+   "status": "COMPLETED",
+   "genie_sql": "WITH `top_stores` AS (\n  SELECT\n    `store_id`,\n    MEASURE(`lost_sales`) AS `lost_sales`,\n    RANK() OVER (ORDER BY MEASURE(`lost_sales`) DESC) AS `store_rank`\n  FROM `bigbox_fe_bar`.`serving`.`availability_kpis`\n  WHERE `store_id` IS NOT NULL\n    AND `date` BETWEEN '2026-09-21' AND '2026-09-27'\n  GROUP BY ALL\n),\n`top5` AS (\n  SELECT\n    `store_id`,\n    `lost_sales`,\n    `store_rank`\n  FROM `top_stores`\n  WHERE `store_rank` <= 5\n),\n`drivers` AS (\n  SELECT\n    `store_id`,\n    `sku_id`,\n    `category`,\n    SUM(`stockout_hours`) AS `stockout_hours`,\n    SUM(`received_units`) AS `received_units`,\n    SUM(CASE WHEN `on_promo` THEN `units_sold` ELSE 0 END) AS `promo_units_sold`,\n    AVG(`closing_on_hand`) AS `avg_closing_on_hand`,\n    ROW_NUMBER() OVER (\n      PARTITION BY `store_id`\n      ORDER BY SUM(`stockout_hours`) DESC, SUM(`units_sold`) DESC, `sku_id` ASC\n    ) AS `driver_rank`\n  FROM `bigbox_fe_bar`.`gold`.`store_sku_daily`\n  WHERE `store_id` IS NOT NULL\n    AND `sku_id` IS NOT NULL\n    AND `category` IS NOT NULL\n    AND `date` BETWEEN '2026-09-21' AND '2026-09-27'\n  GROUP BY ALL\n),\n`top_drivers` AS (\n  SELECT\n    `store_id`,\n    `sku_id` AS `top_driver_sku_id`,\n    `category` AS `top_driver_category`,\n    `stockout_hours` AS `top_driver_stockout_hours`,\n    `received_units` AS `top_driver_received_units`,\n    `promo_units_sold` AS `top_driver_promo_units_sold`,\n    `avg_closing_on_hand` AS `top_driver_avg_closing_on_hand`\n  FROM `drivers`\n  WHERE `driver_rank` = 1\n)\nSELECT\n  `top5`.`store_rank`,\n  `top5`.`store_id`,\n  `top5`.`lost_sales`,\n  `top_drivers`.`top_driver_sku_id`,\n  `top_drivers`.`top_driver_category`,\n  `top_drivers`.`top_driver_stockout_hours`,\n  `top_drivers`.`top_driver_received_units`,\n  `top_drivers`.`top_driver_promo_units_sold`,\n  `top_drivers`.`top_driver_avg_closing_on_hand`\nFROM `top5`\nLEFT JOIN `top_drivers`\n  ON `top5`.`store_id` = `top_drivers`.`store_id`\nORDER BY `top5`.`store_rank` ASC, `top5`.`store_id` ASC",
+   "genie_text": "Last week, the stores with the highest lost sales from stockouts were **S065** ($11,984.91), **S075** ($10,169.18), **S054** ($9,421.41), **S067** ($9,126.54), and **S068** ($8,576.44).\n\nExamples include:\n- **S065** \u2014 **$11,984.91** lost sales; top driver was **SKU0288** in **Apparel** with **98** stockout hours, **0** units received, and **0.0** average closing on hand\n- **S075** \u2014 **$10,169.18** lost sales; top driver was **SKU0258** in **Toys** with **98** stockout hours, **0** units received, and **0.0** average closing on hand\n- **S054** \u2014 **$9,421.41** lost sales; top driver was **SKU0255** in **Toys** with **98** stockout hours, **0** units received, and **0.0** average closing on hand\n- **S067** \u2014 **$9,126.54** lost sales; top driver was **SKU0250** in **Toys** with **98** stockout hours, **0** units received, and **0.0** average closing on hand\n- **S068** \u2014 **$8,576.44** lost sales; top driver was **SKU0250** in **Toys** with **98** stockout hours, **0** units received, and **0.0** average closing on hand\n\nAcross all 5 stores shown, the leading driver had **98 stockout hours**, **no receipts**, and **zero average closing stock**, pointing to prolonged out-of-stocks as the direct reason for the lost sales.",
+   "error": null,
+   "seconds": 22.3,
+   "reference_rows": 5,
+   "genie_rows": 5,
+   "genie_result_head": {
+    "columns": [
+     "store_rank",
+     "store_id",
+     "lost_sales",
+     "top_driver_sku_id",
+     "top_driver_category",
+     "top_driver_stockout_hours",
+     "top_driver_received_units",
+     "top_driver_promo_units_sold",
+     "top_driver_avg_closing_on_hand"
+    ],
+    "rows": [
+     [
+      "1",
+      "S065",
+      "11984.912484643917",
+      "SKU0288",
+      "Apparel",
+      "98",
+      "0",
+      "0",
+      "0.0"
+     ],
+     [
+      "2",
+      "S075",
+      "10169.179291691686",
+      "SKU0258",
+      "Toys",
+      "98",
+      "0",
+      "0",
+      "0.0"
+     ],
+     [
+      "3",
+      "S054",
+      "9421.409766984692",
+      "SKU0255",
+      "Toys",
+      "98",
+      "0",
+      "0",
+      "0.0"
+     ],
+     [
+      "4",
+      "S067",
+      "9126.535588425517",
+      "SKU0250",
+      "Toys",
+      "98",
+      "0",
+      "0",
+      "0.0"
+     ],
+     [
+      "5",
+      "S068",
+      "8576.444416111743",
+      "SKU0250",
+      "Toys",
+      "98",
+      "0",
+      "0",
+      "0.0"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q03",
+   "topic": "availability",
+   "question": "What was the in-stock rate for each store format in September 2026?",
+   "conversation_id": "01f1e88835891d53820349b319ad1954",
+   "message_id": "01f1e88835941ff186ad26afeb5c4c17",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `format`,\n  MEASURE(`in_stock_pct`) AS `in_stock_pct`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `format` IS NOT NULL\nGROUP BY ALL\nORDER BY `format` ASC",
+   "genie_text": "In **September 2026**, the in-stock rate was **0.9193** for **COMPACT**, **0.9142** for **STANDARD**, and **0.9142** for **SUPERCENTER**. Across the 3 store formats shown, **COMPACT** was the highest, while **STANDARD** and **SUPERCENTER** were nearly identical.",
+   "error": null,
+   "seconds": 12.8,
+   "reference_rows": 3,
+   "genie_rows": 3,
+   "genie_result_head": {
+    "columns": [
+     "format",
+     "in_stock_pct"
+    ],
+    "rows": [
+     [
+      "COMPACT",
+      "0.9193477464272627"
+     ],
+     [
+      "STANDARD",
+      "0.9141773589949211"
+     ],
+     [
+      "SUPERCENTER",
+      "0.9142265795206972"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q04",
+   "topic": "shrink",
+   "question": "Which perishable category had the highest shrink last quarter?",
+   "conversation_id": "01f1e8883d5f1bda8e1e25028f856f1e",
+   "message_id": "01f1e8883d69155096765c61f1ced599",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `category`, MEASURE(`shrink_pct`) AS `shrink_pct`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-07-01' AND '2026-09-30'\n  AND `perishable` = true\n  AND `category` IS NOT NULL\nGROUP BY ALL\nORDER BY `shrink_pct` DESC\nLIMIT 1",
+   "genie_text": "**Bakery** had the highest shrink last quarter, with `shrink_pct = 0.25753813930158226`. In the returned result set of 1 row, **Bakery** is the top perishable category for shrink for Q3 2026.",
+   "error": null,
+   "seconds": 11.6,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "shrink_pct"
+    ],
+    "rows": [
+     [
+      "Bakery",
+      "0.25753813930158226"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q05",
+   "topic": "forecast",
+   "question": "What was the forecast WAPE in each of the last three full months?",
+   "conversation_id": "01f1e888451110c8810fab3e8901feb6",
+   "message_id": "01f1e888451d1e27a5a015bfc7bda484",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  date_trunc('MONTH', `date`) AS `month`,\n  MEASURE(`forecast_wape`) AS `forecast_wape`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-07-01' AND '2026-09-30'\nGROUP BY ALL\nORDER BY `month` ASC",
+   "genie_text": "Forecast WAPE was **0.4541** in **July 2026**, **0.4523** in **August 2026**, and **0.4595** in **September 2026**. Across these three full months, **August** was the lowest and **September** was the highest.\nWould you like to see the forecast WAPE broken down by store or category for these months instead?",
+   "error": null,
+   "seconds": 12.2,
+   "reference_rows": 3,
+   "genie_rows": 3,
+   "genie_result_head": {
+    "columns": [
+     "month",
+     "forecast_wape"
+    ],
+    "rows": [
+     [
+      "2026-07-01T00:00:00.000Z",
+      "0.45407651358565493"
+     ],
+     [
+      "2026-08-01T00:00:00.000Z",
+      "0.4522833502810501"
+     ],
+     [
+      "2026-09-01T00:00:00.000Z",
+      "0.45952830546537704"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q06",
+   "topic": "lost sales",
+   "question": "How much did we lose to stockouts in dollars by category last month?",
+   "conversation_id": "01f1e8884cea1d6dad38d4b6ab17156c",
+   "message_id": "01f1e8884cf9162a8395f2cc8621cc6c",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `category`,\n  MEASURE(`lost_sales`) AS `lost_sales`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `category` IS NOT NULL\nGROUP BY ALL\nORDER BY `lost_sales` DESC",
+   "genie_text": "Last month (September 2026), stockouts drove the highest dollar losses in **Electronics** at **$746,477.88**, followed by **Toys** at **$693,129.46**. Examples include:\n- **Electronics** \u2014 **$746,477.88**\n- **Toys** \u2014 **$693,129.46**\n- **Apparel** \u2014 **$188,952.18**\n- **Home & Garden** \u2014 **$88,784.22**\n- **Pantry** \u2014 **$62,607.45**\nAcross all 13 categories shown, losses drop sharply after the top two, with **Dairy** the lowest at **$4,354.55**.",
+   "error": null,
+   "seconds": 11.8,
+   "reference_rows": 13,
+   "genie_rows": 13,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "lost_sales"
+    ],
+    "rows": [
+     [
+      "Electronics",
+      "746477.879805407"
+     ],
+     [
+      "Toys",
+      "693129.4610434998"
+     ],
+     [
+      "Apparel",
+      "188952.18352491895"
+     ],
+     [
+      "Home & Garden",
+      "88784.2162434971"
+     ],
+     [
+      "Pantry",
+      "62607.450174589736"
+     ],
+     [
+      "Household",
+      "61241.395447314564"
+     ],
+     [
+      "Personal Care",
+      "54528.77643329573"
+     ],
+     [
+      "Meat & Seafood",
+      "44950.13524119752"
+     ],
+     [
+      "Beverages",
+      "32308.454223923454"
+     ],
+     [
+      "Frozen",
+      "22932.932965475044"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q07",
+   "topic": "online",
+   "question": "Which region had the lowest online fill rate last month?",
+   "conversation_id": "01f1e88854a91c9eaf64fc2647c15266",
+   "message_id": "01f1e88854b01991b3bd31be960d253e",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `region`,\n  MEASURE(`online_fill_rate`) AS `online_fill_rate`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `region` IS NOT NULL\nGROUP BY ALL\nORDER BY `online_fill_rate` ASC\nLIMIT 1",
+   "genie_text": "Last month, the **SOUTH** region had the lowest online fill rate at **0.9225501654348219**. Since the result shows the single lowest region for September 2026, **SOUTH** was the weakest performer on online order fulfillment in that period.",
+   "error": null,
+   "seconds": 12.3,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "region",
+     "online_fill_rate"
+    ],
+    "rows": [
+     [
+      "SOUTH",
+      "0.9225501654348219"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q08",
+   "topic": "availability",
+   "question": "How many OOS hours did store S042 have last week?",
+   "conversation_id": "01f1e8885c9e1b179c03b7f5cbecc137",
+   "message_id": "01f1e8885ca617c89f35f30732c9a635",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT MEASURE(`stockout_hours`) AS `stockout_hours`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `store_id` = 'S042'\n  AND `date` BETWEEN '2026-09-21' AND '2026-09-27'\nGROUP BY ALL",
+   "genie_text": "Store **S042** had **1,774** out-of-stock hours last week, covering **2026-09-21 to 2026-09-27**. In this result, the total out-of-stock hours for store **S042** for the full week is **1,774**.",
+   "error": null,
+   "seconds": 12.0,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "stockout_hours"
+    ],
+    "rows": [
+     [
+      "1774"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q09",
+   "topic": "inventory",
+   "question": "What were the days of supply by category last week?",
+   "conversation_id": "01f1e8886454124abf1c597c60fd1aa2",
+   "message_id": "01f1e888645b1e4692d2c76a415abe22",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `category`,\n  MEASURE(`days_of_supply`) AS `days_of_supply`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-09-21' AND '2026-09-27'\n  AND `category` IS NOT NULL\nGROUP BY ALL\nORDER BY `days_of_supply` DESC",
+   "genie_text": "Last week (2026-09-21 to 2026-09-27), days of supply varied across **13 categories**, with **Home & Garden** highest at **7.97 days** and **Toys** lowest at **2.00 days**. Examples include:\n- **Home & Garden**: **7.97 days**\n- **Beverages**: **6.33 days**\n- **Household**: **5.96 days**\n- **Electronics**: **3.37 days**\n- **Toys**: **2.00 days**\nOverall, non-food categories tended to have more supply on hand than the lowest categories in the assortment.",
+   "error": null,
+   "seconds": 12.3,
+   "reference_rows": 13,
+   "genie_rows": 13,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "days_of_supply"
+    ],
+    "rows": [
+     [
+      "Home & Garden",
+      "7.973000919117647"
+     ],
+     [
+      "Beverages",
+      "6.326239394604646"
+     ],
+     [
+      "Household",
+      "5.964240598581284"
+     ],
+     [
+      "Frozen",
+      "5.313943392950165"
+     ],
+     [
+      "Personal Care",
+      "5.227341709167807"
+     ],
+     [
+      "Pantry",
+      "4.703684826624398"
+     ],
+     [
+      "Dairy",
+      "4.274412700184142"
+     ],
+     [
+      "Meat & Seafood",
+      "4.24151217739004"
+     ],
+     [
+      "Produce",
+      "3.9731281330821546"
+     ],
+     [
+      "Apparel",
+      "3.8848059592298227"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q10",
+   "topic": "inventory",
+   "question": "What were inventory turns by region last quarter?",
+   "conversation_id": "01f1e8886c3617f09e8b9c788f4d7e1f",
+   "message_id": "01f1e8886c401903bd57f804170b3e43",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `region`, MEASURE(`inventory_turns`) AS `inventory_turns`\nFROM `bigbox_fe_bar`.`serving`.`availability_kpis`\nWHERE `date` BETWEEN '2026-07-01' AND '2026-09-30'\n  AND `region` IS NOT NULL\nGROUP BY ALL\nORDER BY `region` ASC",
+   "genie_text": "Last quarter, inventory turns were **76.82** in **CENTRAL**, **73.11** in **EAST**, **72.01** in **SOUTH**, and **75.36** in **WEST**. **CENTRAL** had the highest inventory turns and **SOUTH** the lowest among the four regions.",
+   "error": null,
+   "seconds": 12.7,
+   "reference_rows": 4,
+   "genie_rows": 4,
+   "genie_result_head": {
+    "columns": [
+     "region",
+     "inventory_turns"
+    ],
+    "rows": [
+     [
+      "CENTRAL",
+      "76.82363995391212"
+     ],
+     [
+      "EAST",
+      "73.10729694138863"
+     ],
+     [
+      "SOUTH",
+      "72.01246730880945"
+     ],
+     [
+      "WEST",
+      "75.3596489752154"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q11",
+   "topic": "sales",
+   "question": "What was total revenue by channel last month?",
+   "conversation_id": "01f1e88874bb1dfdbe0896bf90897f95",
+   "message_id": "01f1e88874c315128175b5dbf90d9719",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `channel`,\n  MEASURE(`total_revenue`) AS `total_revenue`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `sale_date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `channel` IS NOT NULL\nGROUP BY ALL\nORDER BY `total_revenue` DESC",
+   "genie_text": "Last month, total revenue was **19,762,968.29** for **POS** and **3,586,089.48** for **ONLINE**. **POS** generated the higher revenue, at about **5.5x** the online total.",
+   "error": null,
+   "seconds": 11.5,
+   "reference_rows": 2,
+   "genie_rows": 2,
+   "genie_result_head": {
+    "columns": [
+     "channel",
+     "total_revenue"
+    ],
+    "rows": [
+     [
+      "POS",
+      "1.976296829032494E7"
+     ],
+     [
+      "ONLINE",
+      "3586089.4800128886"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q12",
+   "topic": "sales",
+   "question": "What was the average order value in each region last week?",
+   "conversation_id": "01f1e8887c3013668bd6b9ab69a0fc14",
+   "message_id": "01f1e8887c381e05bc632a87458ff5dd",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `region`, MEASURE(`avg_order_value`) AS `avg_order_value`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `sale_date` BETWEEN '2026-09-21' AND '2026-09-27'\n  AND `region` IS NOT NULL\nGROUP BY ALL\nORDER BY `region` ASC",
+   "genie_text": "Last week, the average order value was **19.70** in **CENTRAL**, **19.72** in **EAST**, **19.52** in **SOUTH**, and **19.59** in **WEST**. Across the 4 regions, **EAST** was the highest and **SOUTH** was the lowest, with values clustered tightly in a narrow range of about **0.19**.",
+   "error": null,
+   "seconds": 12.1,
+   "reference_rows": 4,
+   "genie_rows": 4,
+   "genie_result_head": {
+    "columns": [
+     "region",
+     "avg_order_value"
+    ],
+    "rows": [
+     [
+      "CENTRAL",
+      "19.70068637803571"
+     ],
+     [
+      "EAST",
+      "19.71734937621956"
+     ],
+     [
+      "SOUTH",
+      "19.523500158235166"
+     ],
+     [
+      "WEST",
+      "19.58501065036368"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q13",
+   "topic": "sales",
+   "question": "What were the top 5 categories by units sold in September 2026?",
+   "conversation_id": "01f1e888840f185a99348d96c73bde0c",
+   "message_id": "01f1e8888416151a8b7a7b6843fc08bc",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `category`,\n  MEASURE(`units_sold`) AS `units_sold`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `sale_date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `category` IS NOT NULL\nGROUP BY ALL\nORDER BY `units_sold` DESC\nLIMIT 5",
+   "genie_text": "The top 5 categories by **units sold** in **September 2026** were:\n- **Pantry**: **749,252**\n- **Produce**: **675,010**\n- **Beverages**: **347,822**\n- **Dairy**: **302,700**\n- **Bakery**: **230,857**\n\n**Pantry** led the month, and the top two categories were well ahead of the other three.",
+   "error": null,
+   "seconds": 11.5,
+   "reference_rows": 5,
+   "genie_rows": 5,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "units_sold"
+    ],
+    "rows": [
+     [
+      "Pantry",
+      "749252"
+     ],
+     [
+      "Produce",
+      "675010"
+     ],
+     [
+      "Beverages",
+      "347822"
+     ],
+     [
+      "Dairy",
+      "302700"
+     ],
+     [
+      "Bakery",
+      "230857"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q14",
+   "topic": "returns",
+   "question": "What was the item return rate for Electronics last quarter?",
+   "conversation_id": "01f1e8888b831bc09d489d1f437859d5",
+   "message_id": "01f1e8888b8d15bcbd17dbfb6b0e5ee3",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT MEASURE(`item_return_rate`) AS `item_return_rate`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `sale_date` BETWEEN '2026-07-01' AND '2026-09-30'\n  AND `category` = 'Electronics'\nGROUP BY ALL",
+   "genie_text": "For **Electronics** in **last quarter (2026-07-01 to 2026-09-30)**, the **item return rate** was **0.07153640060384338**. Since the result contains **1 row**, this is the category-wide return rate for Electronics for the full quarter covered by the query.",
+   "error": null,
+   "seconds": 12.1,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "item_return_rate"
+    ],
+    "rows": [
+     [
+      "0.07153640060384338"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q15",
+   "topic": "sales",
+   "question": "How many unique buyers ordered online last month?",
+   "conversation_id": "01f1e88893651408ad36e9b382dd3f4d",
+   "message_id": "01f1e888936d1150af56d3d9b445d122",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT MEASURE(`unique_buyers`) AS `unique_buyers`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `channel` = 'ONLINE'\n  AND `sale_date` BETWEEN '2026-09-01' AND '2026-09-30'\nGROUP BY ALL",
+   "genie_text": "Last month, **81,907** unique buyers placed online orders between **2026-09-01** and **2026-09-30**. Because the result contains one total row, **81,907** is the full count for online unique buyers for that month.",
+   "error": null,
+   "seconds": 11.4,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "unique_buyers"
+    ],
+    "rows": [
+     [
+      "81907"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q16",
+   "topic": "sales",
+   "question": "Which 3 categories had the highest average discount rate last quarter?",
+   "conversation_id": "01f1e8889c03101db8a7513342066de3",
+   "message_id": "01f1e8889c0a1953b3526363075ec3c6",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `category`, MEASURE(`avg_discount`) AS `avg_discount`\nFROM `bigbox_fe_bar`.`serving`.`sales_kpis`\nWHERE `sale_date` BETWEEN '2026-07-01' AND '2026-09-30'\n  AND `category` IS NOT NULL\nGROUP BY ALL\nORDER BY `avg_discount` DESC\nLIMIT 3",
+   "genie_text": "Last quarter, the 3 categories with the highest average discount rate were **Frozen** (**0.0075**), **Household** (**0.0064**), and **Bakery** (**0.0052**). Across these 3 categories, **Frozen** had the highest discount rate and each category\u2019s rate was below **0.01**.",
+   "error": null,
+   "seconds": 11.6,
+   "reference_rows": 3,
+   "genie_rows": 3,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "avg_discount"
+    ],
+    "rows": [
+     [
+      "Frozen",
+      "0.007518001565731227"
+     ],
+     [
+      "Household",
+      "0.00642969947512532"
+     ],
+     [
+      "Bakery",
+      "0.005166315147458694"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q17",
+   "topic": "replenishment",
+   "question": "Which 5 suppliers had the worst replenishment fill rate on orders due last month?",
+   "conversation_id": "01f1e888a3821744bdde977ce412e9b0",
+   "message_id": "01f1e888a389150eb46ff8afa564ab98",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `supplier_id`,\n  try_divide(SUM(`received_qty_ea`),SUM(`ordered_qty`)) AS `replenishment_fill_rate`\nFROM `bigbox_fe_bar`.`gold`.`replenishment_fill`\nWHERE `due_date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `supplier_id` IS NOT NULL\nGROUP BY `supplier_id`\nORDER BY `replenishment_fill_rate` ASC\nLIMIT 5",
+   "genie_text": "The **5 suppliers with the lowest replenishment fill rate** on orders due in **September 2026** were:\n- **SUP05** \u2014 **0.9367**\n- **SUP01** \u2014 **0.9386**\n- **SUP02** \u2014 **0.9421**\n- **SUP07** \u2014 **0.9446**\n- **SUP06** \u2014 **0.9461**\nAcross these five, fill rates were tightly grouped, ranging from **0.9367** to **0.9461**.",
+   "error": null,
+   "seconds": 11.5,
+   "reference_rows": 5,
+   "genie_rows": 5,
+   "genie_result_head": {
+    "columns": [
+     "supplier_id",
+     "replenishment_fill_rate"
+    ],
+    "rows": [
+     [
+      "SUP05",
+      "0.9367224236955805"
+     ],
+     [
+      "SUP01",
+      "0.9386024279852798"
+     ],
+     [
+      "SUP02",
+      "0.9421412611327326"
+     ],
+     [
+      "SUP07",
+      "0.944590545526583"
+     ],
+     [
+      "SUP06",
+      "0.9461052428495635"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q18",
+   "topic": "replenishment",
+   "question": "How many purchase-order lines due last month arrived late?",
+   "conversation_id": "01f1e888ab071ce1bad028e08abbbfac",
+   "message_id": "01f1e888ab0f11528a196c96ee1126d3",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT COUNT(*) AS `late_po_lines`\nFROM `bigbox_fe_bar`.`gold`.`replenishment_fill`\nWHERE `due_date` BETWEEN '2026-09-01' AND '2026-09-30'\n  AND `days_late` IS NOT NULL\n  AND `days_late` > 0",
+   "genie_text": "There were **21,436** purchase-order lines due between **2026-09-01** and **2026-09-30** that arrived late. Based on the result shown, the count of late arrivals for last month is **21,436**.",
+   "error": null,
+   "seconds": 12.0,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "late_po_lines"
+    ],
+    "rows": [
+     [
+      "21436"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q19",
+   "topic": "queue",
+   "question": "How many store-SKUs are at stockout risk in tonight's reorder queue?",
+   "conversation_id": "01f1e888b2b915b590fcf81cb5d868f4",
+   "message_id": "01f1e888b2c116109682e1218e32c631",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT COUNT(*) AS `store_sku_count`\nFROM `bigbox_fe_bar`.`gold`.`recommendations`\nWHERE `queue_reason` = 'STOCKOUT_RISK'",
+   "genie_text": "There are **1,130** store-SKU combinations in `gold.recommendations` where `queue_reason = 'STOCKOUT_RISK'`, so **1,130** store-SKUs are at stockout risk in tonight\u2019s reorder queue.",
+   "error": null,
+   "seconds": 11.7,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "store_sku_count"
+    ],
+    "rows": [
+     [
+      "1130"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q20",
+   "topic": "queue",
+   "question": "Which 10 store-SKUs in tonight's queue have the highest expected lost sales?",
+   "conversation_id": "01f1e888ba4a1aafb7b72bf49317117e",
+   "message_id": "01f1e888ba521bebbf6882bbc3c65272",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `store_id`, `sku_id`, `category`, `queue_reason`, `priority`, `expected_lost_sales`, `recommended_order_qty`, `recommended_order_value`\nFROM `bigbox_fe_bar`.`gold`.`recommendations`\nWHERE `queue_reason` IS NOT NULL\n  AND `expected_lost_sales` IS NOT NULL\nORDER BY `expected_lost_sales` DESC, `priority` ASC, `store_id` ASC, `sku_id` ASC\nLIMIT 10",
+   "genie_text": "These are the **10 store-SKUs with the highest expected lost sales** in tonight\u2019s queue, and all 10 are flagged as **STOCKOUT_RISK**. Notable data points include:\n- **S073 / SKU0263** (Toys) \u2014 expected lost sales **1401.11**, priority **1**\n- **S048 / SKU0263** (Toys) \u2014 expected lost sales **1334.09**, priority **2**\n- **S099 / SKU0263** (Toys) \u2014 expected lost sales **1296.21**, priority **3**\n- **S093 / SKU0263** (Toys) \u2014 expected lost sales **1267.37**, priority **4**\n- **S097 / SKU0263** (Toys) \u2014 expected lost sales **1189.50**, priority **5**\nAcross all 10 results, **Toys** appears every time, with **SKU0263** in **9 of 10** rows and expected lost sales ranging from **1047.42** to **1401.11**.",
+   "error": null,
+   "seconds": 13.3,
+   "reference_rows": 10,
+   "genie_rows": 10,
+   "genie_result_head": {
+    "columns": [
+     "store_id",
+     "sku_id",
+     "category",
+     "queue_reason",
+     "priority",
+     "expected_lost_sales",
+     "recommended_order_qty",
+     "recommended_order_value"
+    ],
+    "rows": [
+     [
+      "S073",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "1",
+      "1401.1087263040351",
+      "144",
+      "1517.7599999999998"
+     ],
+     [
+      "S048",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "2",
+      "1334.094244077608",
+      "138",
+      "1454.52"
+     ],
+     [
+      "S099",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "3",
+      "1296.213719443597",
+      "144",
+      "1517.7599999999998"
+     ],
+     [
+      "S093",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "4",
+      "1267.3678416580808",
+      "138",
+      "1454.52"
+     ],
+     [
+      "S097",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "5",
+      "1189.4959550580943",
+      "132",
+      "1391.28"
+     ],
+     [
+      "S016",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "6",
+      "1149.7143949185036",
+      "144",
+      "1517.7599999999998"
+     ],
+     [
+      "S032",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "7",
+      "1096.5591311223543",
+      "126",
+      "1328.04"
+     ],
+     [
+      "S036",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "8",
+      "1080.7983395623992",
+      "132",
+      "1391.28"
+     ],
+     [
+      "S081",
+      "SKU0263",
+      "Toys",
+      "STOCKOUT_RISK",
+      "9",
+      "1056.3173952187767",
+      "144",
+      "1517.7599999999998"
+     ],
+     [
+      "S065",
+      "SKU0253",
+      "Toys",
+      "STOCKOUT_RISK",
+      "10",
+      "1047.4208408220986",
+      "42",
+      "1529.2199999999998"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q21",
+   "topic": "queue",
+   "question": "What is the total cost of tonight's recommended orders by region?",
+   "conversation_id": "01f1e888c2c21ba7808cdb3cbb85ee97",
+   "message_id": "01f1e888c2ca10b69648f79a82d8fe9e",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `region`, SUM(`recommended_order_value`) AS `total_recommended_order_cost`\nFROM `bigbox_fe_bar`.`gold`.`recommendations`\nWHERE `region` IS NOT NULL\n  AND `recommended_order_qty` > 0\nGROUP BY `region`\nORDER BY `total_recommended_order_cost` DESC",
+   "genie_text": "Tonight\u2019s total recommended order cost is highest in **WEST** at **327,002.21**, followed by **CENTRAL** at **304,887.45**, **EAST** at **302,611.87**, and **SOUTH** at **301,479.47**. Across all 4 regions shown, **WEST** is the highest and **SOUTH** is the lowest, with the regional totals fairly close together overall.",
+   "error": null,
+   "seconds": 12.4,
+   "reference_rows": 4,
+   "genie_rows": 4,
+   "genie_result_head": {
+    "columns": [
+     "region",
+     "total_recommended_order_cost"
+    ],
+    "rows": [
+     [
+      "WEST",
+      "327002.20999999996"
+     ],
+     [
+      "CENTRAL",
+      "304887.44999999995"
+     ],
+     [
+      "EAST",
+      "302611.87"
+     ],
+     [
+      "SOUTH",
+      "301479.47"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q22",
+   "topic": "queue",
+   "question": "How many overstock items are in tonight's queue for each category?",
+   "conversation_id": "01f1e888ca9e1caab5c6abf5d71871aa",
+   "message_id": "01f1e888caa81cdb8671208f6796d131",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT `category`, COUNT(*) AS `overstock_items`\nFROM `bigbox_fe_bar`.`gold`.`recommendations`\nWHERE `queue_reason` = 'OVERSTOCK'\n  AND `category` IS NOT NULL\nGROUP BY `category`\nORDER BY `overstock_items` DESC, `category` ASC",
+   "genie_text": "Tonight's overstock queue has **13 categories**. Examples include:\n- **Bakery:** **728**\n- **Pantry:** **591**\n- **Meat & Seafood:** **540**\n- **Household:** **396**\n- **Produce:** **375**\n\nAcross the categories shown, **Bakery** has the most overstock items and **Frozen** has the fewest at **30**.",
+   "error": null,
+   "seconds": 11.3,
+   "reference_rows": 13,
+   "genie_rows": 13,
+   "genie_result_head": {
+    "columns": [
+     "category",
+     "overstock_items"
+    ],
+    "rows": [
+     [
+      "Bakery",
+      "728"
+     ],
+     [
+      "Pantry",
+      "591"
+     ],
+     [
+      "Meat & Seafood",
+      "540"
+     ],
+     [
+      "Household",
+      "396"
+     ],
+     [
+      "Produce",
+      "375"
+     ],
+     [
+      "Beverages",
+      "316"
+     ],
+     [
+      "Personal Care",
+      "266"
+     ],
+     [
+      "Home & Garden",
+      "226"
+     ],
+     [
+      "Dairy",
+      "198"
+     ],
+     [
+      "Apparel",
+      "143"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q23",
+   "topic": "decisions",
+   "question": "How many reorder decisions were approved, overridden and rejected?",
+   "conversation_id": "01f1e888d1e7157fb48e5d163ac2ce9e",
+   "message_id": "01f1e888d1f01eeea95a6ecea7d20eeb",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT\n  `action`,\n  COUNT(*) AS `decision_count`\nFROM `bigbox_fe_bar`.`gold`.`reorder_decisions`\nWHERE `action` IS NOT NULL\n  AND `action` IN ('approve', 'override', 'reject')\nGROUP BY `action`\nORDER BY CASE `action`\n  WHEN 'approve' THEN 1\n  WHEN 'override' THEN 2\n  WHEN 'reject' THEN 3\n  ELSE 4\nEND",
+   "genie_text": "There were **7 approved** reorder decisions, **7 overridden**, and **6 rejected**. Across the **20 total** decisions shown, approvals and overrides were tied for the highest count, each **1** higher than rejects.",
+   "error": null,
+   "seconds": 11.5,
+   "reference_rows": 3,
+   "genie_rows": 3,
+   "genie_result_head": {
+    "columns": [
+     "action",
+     "decision_count"
+    ],
+    "rows": [
+     [
+      "approve",
+      "7"
+     ],
+     [
+      "override",
+      "7"
+     ],
+     [
+      "reject",
+      "6"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q24",
+   "topic": "decisions",
+   "question": "For overridden decisions, how many units did planners add in total compared with the recommendation?",
+   "conversation_id": "01f1e888d98810c8a5d1f8f30d59ae90",
+   "message_id": "01f1e888d995123a8a0a291c7b5a9f05",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT SUM(CASE WHEN `final_qty` > `recommended_qty` THEN `final_qty` - `recommended_qty` ELSE 0 END) AS `total_added_units`\nFROM `bigbox_fe_bar`.`gold`.`reorder_decisions`\nWHERE `action` = 'override'\nGROUP BY ALL",
+   "genie_text": "For decisions with **action = override**, planners added **42 units** in total above the recommended quantities. In the single result shown, the total added units for overridden decisions is **42**.",
+   "error": null,
+   "seconds": 14.8,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "total_added_units"
+    ],
+    "rows": [
+     [
+      "42"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  },
+  {
+   "id": "q25",
+   "topic": "inventory",
+   "question": "How many store-SKUs are out of stock right now?",
+   "conversation_id": "01f1e888e2ef19579b220964ba0f835e",
+   "message_id": "01f1e888e2f71b969706bb6e5f10135e",
+   "status": "COMPLETED",
+   "genie_sql": "SELECT COUNT(*) AS `out_of_stock_store_skus`\nFROM `bigbox_fe_bar`.`gold`.`inventory_position`\nWHERE `on_hand` = 0",
+   "genie_text": "There are **1,709** store-SKUs with **on_hand = 0** in `gold.inventory_position` right now. Based on the result shown, the current out-of-stock count is **1,709** store-SKUs.",
+   "error": null,
+   "seconds": 11.7,
+   "reference_rows": 1,
+   "genie_rows": 1,
+   "genie_result_head": {
+    "columns": [
+     "out_of_stock_store_skus"
+    ],
+    "rows": [
+     [
+      "1709"
+     ]
+    ]
+   },
+   "pass": true,
+   "reason": "match"
+  }
+ ]
+}

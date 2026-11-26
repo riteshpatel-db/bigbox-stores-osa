@@ -1,0 +1,32 @@
+bundle:
+  name: bigbox-stores-osa
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog that holds every table, volume and model of the build.
+    default: bigbox_fe_bar
+  catalog_storage_root:
+    description: >-
+      Managed storage root for the catalog (the metastore has no default root). Supplied from
+      .env as BUNDLE_VAR_catalog_storage_root so the bucket name stays out of the repo.
+  warehouse_id:
+    description: Serverless SQL warehouse used by queries, Genie and the app.
+    lookup:
+      warehouse: FE_BAR_Ritesh
+  genie_space_id:
+    description: >-
+      Genie space "Bigbox Stores - Store Ops", created by src/genie/space.py (not a bundle resource
+      here); the app embeds it.
+    default: 01f1e884bece1d39994e9ba5a98ab5f1
+
+targets:
+  # No `mode: development`: it would prefix catalog and schema names, and the agreed
+  # names (bigbox_fe_bar.raw, .bronze, ...) are referenced by Genie, the app and the evidence.
+  dev:
+    default: true
+    workspace:
+      host: https://fevm-serverless-stable-ritesh.cloud.databricks.com
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}

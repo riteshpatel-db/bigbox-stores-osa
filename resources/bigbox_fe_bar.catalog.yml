@@ -1,0 +1,10 @@
+resources:
+  catalogs:
+    bigbox_fe_bar:
+      name: ${var.catalog}
+      storage_root: ${var.catalog_storage_root}
+      comment: >-
+        Bigbox Stores (fictional big-box retailer): near-real-time on-shelf availability and
+        reorder recommendations. All data is synthetic.
+      lifecycle:
+        prevent_destroy: true

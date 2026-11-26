@@ -1,0 +1,239 @@
+# Benchmark questions for the Genie space "Bigbox Stores - Store Ops", scored by src/genie/score.py.
+# Each question has reference SQL; Genie's answer passes when its result set equals the reference
+# (order-insensitive, numeric tolerance 0.5 %, extra columns allowed). None of these questions is
+# an example SQL of the space (src/genie/space.json), so the score is not a lookup.
+#
+# Relative dates follow the space instruction: they are anchored on the latest date in the data
+# (2026-10-01, a partial trading day), not on the calendar date the question is asked.
+#   today = 2026-10-01, yesterday = 2026-09-30, last week = Mon 2026-09-21 .. Sun 2026-09-27,
+#   last month = September 2026, last quarter = Q3 2026 (2026-07-01 .. 2026-09-30).
+
+questions:
+  - id: q01
+    topic: availability
+    question: What was on-shelf availability by region last week?
+    sql: |
+      SELECT region, MEASURE(on_shelf_availability) AS on_shelf_availability
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY region
+
+  - id: q02
+    topic: lost sales
+    question: Which stores lost the most sales to stockouts last week and why? Show the top 5.
+    sql: |
+      SELECT store_id, MEASURE(lost_sales) AS lost_sales
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY store_id
+      ORDER BY lost_sales DESC
+      LIMIT 5
+
+  - id: q03
+    topic: availability
+    question: What was the in-stock rate for each store format in September 2026?
+    sql: |
+      SELECT format, MEASURE(in_stock_pct) AS in_stock_pct
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY format
+
+  - id: q04
+    topic: shrink
+    question: Which perishable category had the highest shrink last quarter?
+    sql: |
+      SELECT category, MEASURE(shrink_pct) AS shrink_pct
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-07-01' AND '2026-09-30' AND perishable
+      GROUP BY category
+      ORDER BY shrink_pct DESC
+      LIMIT 1
+
+  - id: q05
+    topic: forecast
+    question: What was the forecast WAPE in each of the last three full months?
+    sql: |
+      SELECT month, MEASURE(forecast_wape) AS forecast_wape
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-07-01' AND '2026-09-30'
+      GROUP BY month
+
+  - id: q06
+    topic: lost sales
+    question: How much did we lose to stockouts in dollars by category last month?
+    sql: |
+      SELECT category, MEASURE(lost_sales) AS lost_sales
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY category
+
+  - id: q07
+    topic: online
+    question: Which region had the lowest online fill rate last month?
+    sql: |
+      SELECT region, MEASURE(online_fill_rate) AS online_fill_rate
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY region
+      ORDER BY online_fill_rate
+      LIMIT 1
+
+  - id: q08
+    topic: availability
+    question: How many OOS hours did store S042 have last week?
+    sql: |
+      SELECT MEASURE(stockout_hours) AS stockout_hours
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-21' AND '2026-09-27' AND store_id = 'S042'
+
+  - id: q09
+    topic: inventory
+    question: What were the days of supply by category last week?
+    sql: |
+      SELECT category, MEASURE(days_of_supply) AS days_of_supply
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY category
+
+  - id: q10
+    topic: inventory
+    question: What were inventory turns by region last quarter?
+    sql: |
+      SELECT region, MEASURE(inventory_turns) AS inventory_turns
+      FROM bigbox_fe_bar.serving.availability_kpis
+      WHERE date BETWEEN '2026-07-01' AND '2026-09-30'
+      GROUP BY region
+
+  - id: q11
+    topic: sales
+    question: What was total revenue by channel last month?
+    sql: |
+      SELECT channel, MEASURE(total_revenue) AS total_revenue
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY channel
+
+  - id: q12
+    topic: sales
+    question: What was the average order value in each region last week?
+    sql: |
+      SELECT region, MEASURE(avg_order_value) AS avg_order_value
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY region
+
+  - id: q13
+    topic: sales
+    question: What were the top 5 categories by units sold in September 2026?
+    sql: |
+      SELECT category, MEASURE(units_sold) AS units_sold
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY category
+      ORDER BY units_sold DESC
+      LIMIT 5
+
+  - id: q14
+    topic: returns
+    question: What was the item return rate for Electronics last quarter?
+    sql: |
+      SELECT MEASURE(item_return_rate) AS item_return_rate
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-07-01' AND '2026-09-30' AND category = 'Electronics'
+
+  - id: q15
+    topic: sales
+    question: How many unique buyers ordered online last month?
+    sql: |
+      SELECT MEASURE(unique_buyers) AS unique_buyers
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-09-01' AND '2026-09-30' AND channel = 'ONLINE'
+
+  - id: q16
+    topic: sales
+    question: Which 3 categories had the highest average discount rate last quarter?
+    sql: |
+      SELECT category, MEASURE(avg_discount) AS avg_discount
+      FROM bigbox_fe_bar.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-07-01' AND '2026-09-30'
+      GROUP BY category
+      ORDER BY avg_discount DESC
+      LIMIT 3
+
+  - id: q17
+    topic: replenishment
+    question: Which 5 suppliers had the worst replenishment fill rate on orders due last month?
+    sql: |
+      SELECT supplier_id, sum(received_qty_ea) / sum(ordered_qty) AS replenishment_fill_rate
+      FROM bigbox_fe_bar.gold.replenishment_fill
+      WHERE due_date BETWEEN '2026-09-01' AND '2026-09-30'
+      GROUP BY supplier_id
+      ORDER BY replenishment_fill_rate
+      LIMIT 5
+
+  - id: q18
+    topic: replenishment
+    question: How many purchase-order lines due last month arrived late?
+    sql: |
+      SELECT count(*) AS late_lines
+      FROM bigbox_fe_bar.gold.replenishment_fill
+      WHERE due_date BETWEEN '2026-09-01' AND '2026-09-30' AND days_late > 0
+
+  - id: q19
+    topic: queue
+    question: How many store-SKUs are at stockout risk in tonight's reorder queue?
+    sql: |
+      SELECT count(*) AS stockout_risk_items
+      FROM bigbox_fe_bar.gold.recommendations
+      WHERE queue_reason = 'STOCKOUT_RISK'
+
+  - id: q20
+    topic: queue
+    question: Which 10 store-SKUs in tonight's queue have the highest expected lost sales?
+    sql: |
+      SELECT store_id, sku_id, expected_lost_sales
+      FROM bigbox_fe_bar.gold.recommendations
+      WHERE queue_reason IS NOT NULL
+      ORDER BY expected_lost_sales DESC
+      LIMIT 10
+
+  - id: q21
+    topic: queue
+    question: What is the total cost of tonight's recommended orders by region?
+    sql: |
+      SELECT region, sum(recommended_order_value) AS recommended_order_value
+      FROM bigbox_fe_bar.gold.recommendations
+      GROUP BY region
+
+  - id: q22
+    topic: queue
+    question: How many overstock items are in tonight's queue for each category?
+    sql: |
+      SELECT category, count(*) AS overstock_items
+      FROM bigbox_fe_bar.gold.recommendations
+      WHERE queue_reason = 'OVERSTOCK'
+      GROUP BY category
+
+  - id: q23
+    topic: decisions
+    question: How many reorder decisions were approved, overridden and rejected?
+    sql: |
+      SELECT action, count(*) AS decisions
+      FROM bigbox_fe_bar.gold.reorder_decisions
+      GROUP BY action
+
+  - id: q24
+    topic: decisions
+    question: For overridden decisions, how many units did planners add in total compared with the recommendation?
+    sql: |
+      SELECT sum(final_qty - recommended_qty) AS units_added
+      FROM bigbox_fe_bar.gold.reorder_decisions
+      WHERE action = 'override'
+
+  - id: q25
+    topic: inventory
+    question: How many store-SKUs are out of stock right now?
+    sql: |
+      SELECT count(*) AS out_of_stock_items
+      FROM bigbox_fe_bar.gold.inventory_position
+      WHERE on_hand = 0

@@ -1,0 +1,13 @@
+# Run-cost model assumptions. Every number here is an assumption; the unit costs they multiply
+# (per refresh run, per training run, per hour of endpoint / app / warehouse, per day of Lakebase)
+# are measured from system.billing.usage x system.billing.list_prices by scripts/evidence_cost.py.
+days_per_month: 30.42               # 365 / 12
+refresh_runs_per_day: 96            # bigbox_refresh every 15 minutes (its schedule), all day
+training_runs_per_month: 4          # bigbox_ml_train weekly
+endpoint_hours_per_day: 12          # what-if traffic in store hours; scale-to-zero otherwise
+warehouse_hours_per_day: 12         # KPI header + Genie in store hours (auto-stop 10 min otherwise)
+app_hours_per_day: 24               # app compute left running
+# Refresh and training cost grows with data volume, so they are scaled to the company with the same
+# revenue factor as the value model; the endpoint, app, warehouse and Lakebase are sized by users
+# and request rates, not by data volume, so they are not scaled.
+scale_data_costs_with_revenue: true

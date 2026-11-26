@@ -1,0 +1,8 @@
+resources:
+  volumes:
+    landing:
+      catalog_name: ${resources.catalogs.bigbox_fe_bar.name}
+      schema_name: ${resources.schemas.raw.name}
+      name: landing
+      volume_type: MANAGED
+      comment: Synthetic extract files (history and live micro-batches) picked up by Auto Loader.

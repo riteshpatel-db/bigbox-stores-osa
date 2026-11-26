@@ -1,0 +1,22 @@
+resources:
+  postgres_projects:
+    # Lakebase Autoscaling project for operational serving (stage D). Creating it provisions the
+    # `production` branch and its read-write endpoint. The database `bigbox_ops`, the UC catalog
+    # `bigbox_ops_pg` and the synced table are not bundle resource types in this CLI version;
+    # scripts/setup_lakebase.py creates them (idempotent), called from scripts/deploy.sh.
+    bigbox_ops:
+      project_id: bigbox-ops
+      display_name: Bigbox Stores ops
+      # 17 rather than the workspace's newest (18): Lakehouse Sync (the native Postgres -> Delta
+      # path, Beta) requires 17, so it stays open as an alternative to the MERGE write-back.
+      pg_version: 17
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 2
+        suspend_timeout_duration: 300s
+      custom_tags:
+        - key: project
+          value: bigbox-stores-osa
+      lifecycle:
+        prevent_destroy: true

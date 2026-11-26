@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    bigbox_live_drip:
+      name: bigbox_live_drip
+      description: >-
+        Release the next simulated hours of the live window (staged micro-batch files) into the
+        landing folders, so Auto Loader sees new files arrive. Paused by default: unpause for demos.
+      tags:
+        project: bigbox-stores-osa
+        stage: "0-raw-data"
+      max_concurrent_runs: 1
+      schedule:
+        quartz_cron_expression: "0 0/15 * * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+      environments:
+        - environment_key: generator
+          spec:
+            environment_version: "4"
+            dependencies:
+              - pyyaml>=6
+      tasks:
+        - task_key: release
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          environment_key: generator
+          spark_python_task:
+            python_file: ../src/generator/run_drip.py
+            parameters: ["--landing", "/Volumes/${var.catalog}/raw/landing"]

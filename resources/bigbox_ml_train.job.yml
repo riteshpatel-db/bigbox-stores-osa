@@ -1,0 +1,68 @@
+resources:
+  jobs:
+    bigbox_ml_train:
+      name: bigbox_ml_train
+      description: >-
+        Stage C: build the feature table, sweep six demand-model candidates on one holdout,
+        register the best two as @champion / @challenger, batch-score gold.forecast and
+        gold.recommendations, replay the holdout under the incumbent and the ML policy, and serve
+        @champion on bigbox-demand-forecast with a batch-vs-endpoint parity test.
+      tags:
+        project: bigbox-stores-osa
+        stage: c-ml
+      timeout_seconds: 10800
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: ml
+          spec:
+            environment_version: "4"
+            dependencies:
+              - mlflow==3.18.0
+              - databricks-feature-engineering==0.18.4
+              - lightgbm==4.7.0
+              - xgboost==3.4.1
+              - optuna==5.1.0
+              - scikit-learn==1.6.1
+              - pyyaml>=6
+      tasks:
+        - task_key: features
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/01_features.ipynb
+            base_parameters: {catalog: "${var.catalog}", mode: full}
+        - task_key: train
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: features}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/02_train.ipynb
+            base_parameters:
+              catalog: "${var.catalog}"
+              experiment: "${resources.experiments.bigbox_demand_forecast.name}"
+        - task_key: score
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: train}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/03_score.ipynb
+            base_parameters: {catalog: "${var.catalog}", mode: full}
+        - task_key: backtest
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: train}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/04_backtest.ipynb
+            base_parameters: {catalog: "${var.catalog}", run_id: "{{job.run_id}}"}
+        - task_key: endpoint
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: score}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/05_endpoint.ipynb
+            base_parameters: {catalog: "${var.catalog}", endpoint: bigbox-demand-forecast}

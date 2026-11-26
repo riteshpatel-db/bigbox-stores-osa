@@ -1,0 +1,125 @@
+# Bigbox Stores synthetic data generator: every parameter lives here, and the README publishes them.
+# Values are plausible big-box retail figures used to calibrate the simulation; they are not
+# taken from any real retailer.
+seed: 20261023
+
+calendar:
+  history_start: 2025-10-01
+  history_end: 2026-09-30
+  live_end: 2026-10-28
+  burn_in_days: 28          # simulated before history_start so the incumbent policy reaches steady state; not emitted
+  open_hour: 8              # first trading hour starts 08:00
+  close_hour: 22            # stores close 22:00 (14 trading hours)
+
+stores:
+  count: 100
+  regions: [EAST, CENTRAL, SOUTH, WEST]
+  formats:                  # share of stores, demand size factor, share of the assortment ranged
+    SUPERCENTER: {share: 0.55, size: 1.35, ranged: 1.00}
+    STANDARD: {share: 0.35, size: 1.00, ranged: 0.90}
+    COMPACT: {share: 0.10, size: 0.60, ranged: 0.75}
+  size_sigma: 0.25          # lognormal store-to-store variation on top of the format factor
+
+products:
+  count: 300
+  suppliers: 12
+  new_launches: {count: 10, launch_date: 2026-03-02}
+  # share: share of SKUs; shelf_life in days (perishables only); price in $; lead_time in days;
+  # return_rate per sold line; online_share of demand; seasonality amplitude and peak month;
+  # damage_rate: daily share of on-hand units damaged
+  categories:
+    - {name: Dairy, share: 0.08, perishable: true, shelf_life: [10, 14], price: [2, 6], case_pack: [6, 12], lead_time: [2, 2], return_rate: 0.003, online_share: 0.05, season_amp: 0.05, peak_month: 1, damage_rate: 0.002}
+    - {name: Bakery, share: 0.05, perishable: true, shelf_life: [3, 5], price: [2, 7], case_pack: [6, 8], lead_time: [1, 1], return_rate: 0.002, online_share: 0.04, season_amp: 0.05, peak_month: 12, damage_rate: 0.004}
+    - {name: Produce, share: 0.10, perishable: true, shelf_life: [5, 9], price: [1, 5], case_pack: [6, 12], lead_time: [2, 3], return_rate: 0.004, online_share: 0.04, season_amp: 0.15, peak_month: 7, damage_rate: 0.006}
+    - {name: Meat & Seafood, share: 0.06, perishable: true, shelf_life: [4, 7], price: [5, 20], case_pack: [4, 6], lead_time: [2, 2], return_rate: 0.003, online_share: 0.04, season_amp: 0.10, peak_month: 7, damage_rate: 0.003}
+    - {name: Frozen, share: 0.07, perishable: false, price: [3, 10], case_pack: [6, 12], lead_time: [4, 5], return_rate: 0.003, online_share: 0.05, season_amp: 0.10, peak_month: 7, damage_rate: 0.001}
+    - {name: Pantry, share: 0.14, perishable: false, price: [1.5, 8], case_pack: [12, 24], lead_time: [5, 7], return_rate: 0.005, online_share: 0.07, season_amp: 0.05, peak_month: 11, damage_rate: 0.0005}
+    - {name: Beverages, share: 0.10, perishable: false, price: [1, 12], case_pack: [12, 24], lead_time: [4, 6], return_rate: 0.005, online_share: 0.06, season_amp: 0.25, peak_month: 7, damage_rate: 0.001}
+    - {name: Household, share: 0.10, perishable: false, price: [3, 20], case_pack: [6, 12], lead_time: [6, 8], return_rate: 0.02, online_share: 0.12, season_amp: 0.05, peak_month: 1, damage_rate: 0.0005}
+    - {name: Personal Care, share: 0.08, perishable: false, price: [3, 15], case_pack: [6, 12], lead_time: [6, 8], return_rate: 0.03, online_share: 0.15, season_amp: 0.05, peak_month: 1, damage_rate: 0.0005}
+    - {name: Electronics, share: 0.05, perishable: false, price: [15, 200], case_pack: [1, 4], lead_time: [9, 12], return_rate: 0.08, online_share: 0.30, season_amp: 0.45, peak_month: 11, damage_rate: 0.0003}
+    - {name: Toys, share: 0.06, perishable: false, price: [8, 60], case_pack: [2, 6], lead_time: [9, 12], return_rate: 0.05, online_share: 0.20, season_amp: 0.90, peak_month: 12, damage_rate: 0.0003}
+    - {name: Home & Garden, share: 0.06, perishable: false, price: [10, 80], case_pack: [2, 6], lead_time: [7, 10], return_rate: 0.04, online_share: 0.15, season_amp: 0.40, peak_month: 5, damage_rate: 0.0005}
+    - {name: Apparel, share: 0.05, perishable: false, price: [8, 40], case_pack: [4, 12], lead_time: [9, 12], return_rate: 0.10, online_share: 0.25, season_amp: 0.20, peak_month: 12, damage_rate: 0.0003}
+  cost_ratio: [0.55, 0.75]  # unit_cost = unit_price x U(cost_ratio)
+
+buyers:
+  count: 150000
+  loyalty_share_of_pos_baskets: 0.35
+
+demand:
+  popularity_median: 2.2    # median units per store-SKU-day before price, store and calendar effects
+  popularity_sigma: 0.9
+  price_elasticity: 0.6     # base rate scales with (reference_price / price) ^ elasticity
+  reference_price: 6.0
+  day_noise_shape: 8.0      # gamma shape of the day-level demand shock (lower = noisier)
+  dow: [0.85, 0.85, 0.90, 0.95, 1.10, 1.35, 1.20]   # Monday .. Sunday
+  hour_profile: [3, 4, 6, 8, 9, 7, 6, 6, 7, 9, 10, 10, 9, 6]   # relative weights for 08:00 .. 21:00
+  holidays:                 # multiplier on demand; categories: [] = all categories
+    - {start: 2025-11-24, end: 2025-11-26, mult: 1.30, categories: [Dairy, Bakery, Produce, Meat & Seafood, Frozen, Pantry, Beverages]}
+    - {start: 2025-11-27, end: 2025-11-27, mult: 0.30, categories: []}
+    - {start: 2025-11-28, end: 2025-11-30, mult: 2.20, categories: [Electronics, Toys, Home & Garden, Apparel]}
+    - {start: 2025-12-15, end: 2025-12-24, mult: 1.50, categories: [Electronics, Toys, Apparel]}
+    - {start: 2025-12-20, end: 2025-12-24, mult: 1.25, categories: [Dairy, Bakery, Produce, Meat & Seafood, Beverages]}
+    - {start: 2025-12-25, end: 2025-12-25, mult: 0.30, categories: []}
+    - {start: 2026-04-02, end: 2026-04-04, mult: 1.25, categories: [Bakery, Meat & Seafood, Produce, Toys]}
+    - {start: 2026-05-22, end: 2026-05-25, mult: 1.30, categories: [Meat & Seafood, Beverages, Home & Garden]}
+    - {start: 2026-07-02, end: 2026-07-04, mult: 1.40, categories: [Meat & Seafood, Beverages, Produce]}
+    - {start: 2026-08-03, end: 2026-08-23, mult: 1.25, categories: [Apparel, Electronics, Household]}
+    - {start: 2026-09-04, end: 2026-09-07, mult: 1.20, categories: [Meat & Seafood, Beverages]}
+
+promotions:
+  events: 30
+  duration_days: 7
+  skus_per_event: 12
+  discount: [0.10, 0.30]    # rounded to 5 % steps
+  uplift_per_discount: 2.5  # demand x (1 + uplift x discount); the incumbent policy does not anticipate it
+
+incumbent_policy:           # nightly batch replenishment, as described by the buyer
+  ma_days: 28               # forecast = 28-day moving average of observed (censored) sales
+  review_days: 1
+  safety_days: 3            # fixed safety stock, in days of forecast
+  min_presentation_cases: 1 # never let a ranged SKU drop below one case on hand + on order
+
+supply:
+  full_fill_prob: 0.92      # otherwise the supplier ships U(short_fill) of the order, in whole cases
+  short_fill: [0.5, 0.9]
+  late_prob: 0.10
+  late_days: [1, 2]
+
+pos:
+  qty_per_line: {1: 0.78, 2: 0.16, 3: 0.06}
+  lines_per_basket: 2.3
+
+online:
+  delivery_fee: 5.99
+  free_delivery_over: 35.0
+  lines_per_order: [1, 3]
+  pickup_share: 0.30        # share of orders tagged PICKUP once the new column appears
+
+returns:
+  lag_mean_days: 7
+  max_lag_days: 30
+  reasons: {DEFECTIVE: 0.30, CHANGED_MIND: 0.45, WRONG_ITEM: 0.15, DAMAGED_IN_TRANSIT: 0.10}
+
+defects:                    # injected into the extracts only; the ground truth stays clean
+  pos_duplicate_rate: 0.005
+  pos_null_sku_rate: 0.0015
+  pos_null_store_rate: 0.0015
+  pos_null_price_rate: 0.002
+  pos_late_rate: 0.02
+  pos_late_days: [1, 3]
+  pos_orphan_sku_rate: 0.001
+  pos_test_store_rate: 0.0005
+  test_store_id: S999
+  pos_negative_qty_rate: 0.0005
+  pos_future_ts_rate: 0.0002
+  future_ts_shift_days: 1096
+  cents_price: {store_id: S037, start: 2026-06-08, end: 2026-06-14}
+  online_late_rate: 0.01    # history: one extract day late; live: 2-6 hourly batches late
+  online_overship_rate: 0.0005
+  uom_cases: {supplier_id: SUP07, start: 2026-02-01, end: 2026-05-31}
+  schema_drift: {entity: online_order_lines, column: fulfilment_method, start: 2026-04-01}
+
+live:
+  drip_hours_per_run: 4     # each bigbox_live_drip run releases the next 4 simulated hours

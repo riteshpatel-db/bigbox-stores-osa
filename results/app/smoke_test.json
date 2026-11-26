@@ -1,0 +1,78 @@
+{
+ "decision": {
+  "action": "reject",
+  "decided_at": "2026-11-25T05:15:11.987Z",
+  "decision_id": "cbbe8f4d-75e8-4e3d-b22d-67db1d35adf3",
+  "final_qty": 0,
+  "recommended_qty": 126,
+  "sku_id": "SKU0263",
+  "store_id": "S075"
+ },
+ "decision_in_delta": "1",
+ "decision_status": "201",
+ "delta_after": "22",
+ "delta_before": "21",
+ "finished": "2026-11-25T05:16:08Z",
+ "health": {
+  "as_of_ts": "2026-10-01T14:00:00.000Z",
+  "decisions": 21,
+  "lakebase_ms": 74,
+  "queue_rows": 5133,
+  "rows": 28005,
+  "status": "ok"
+ },
+ "health_status": "200",
+ "item": "S075/SKU0263",
+ "passed": true,
+ "pg_after": "22",
+ "pg_before": "21",
+ "queue": {
+  "ms": 67,
+  "rows": [
+   {
+    "action": null,
+    "as_of_ts": "2026-10-01T14:00:00.000Z",
+    "case_pack": 6,
+    "category": "Toys",
+    "days_of_supply": 0.4451967543676297,
+    "decided_at": null,
+    "decided_by": null,
+    "decision_id": null,
+    "demand_until_delivery": 178.34948482832363,
+    "expected_lost_sales": 904.8387885814248,
+    "final_qty": null,
+    "forecast_today": 15.818213916391898,
+    "on_hand": "8",
+    "on_order_units": "114",
+    "perishable": false,
+    "priority": 22,
+    "queue_reason": "STOCKOUT_RISK",
+    "recommended_order_qty": "126",
+    "recommended_order_value": 1328.04,
+    "region": "SOUTH",
+    "sku_id": "SKU0263",
+    "stockout_risk": 0.9773149678018147,
+    "store_id": "S075"
+   }
+  ],
+  "total": 5112
+ },
+ "queue_status": "200",
+ "started": "2026-11-25T05:15:07Z",
+ "url": "https://bigbox-ops-app-7474657773731312.aws.databricksapps.com",
+ "whatif": {
+  "batch_forecast": 15.818213916391898,
+  "edited": {
+   "effective_price": 13.59,
+   "promo_discount": 0.15,
+   "unit_price": 15.99
+  },
+  "endpoint_baseline": 15.818213916391898,
+  "ms": 106,
+  "whatif_forecast": 19.619819498057762
+ },
+ "whatif_status": "200",
+ "whoami_status": "200",
+ "writeback_result": "SUCCESS",
+ "writeback_run_id": "497481628286940"
+}

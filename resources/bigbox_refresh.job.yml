@@ -1,0 +1,71 @@
+resources:
+  jobs:
+    bigbox_refresh:
+      name: bigbox_refresh
+      description: >-
+        Near-real-time refresh every 15 minutes: a triggered update of bigbox_osa_pipeline, then
+        the last days of ml.store_sku_features, gold.forecast and tonight's gold.recommendations,
+        then the Lakebase sync of serving.recommendations_synced. In parallel, the write-back
+        copies new planner decisions from Lakebase into gold.reorder_decisions.
+        Paused by default; unpause for demo windows (serverless scales to zero in between).
+      tags:
+        project: bigbox-stores-osa
+        stage: a-lakeflow
+      max_concurrent_runs: 1
+      environments:
+        # Sorted by key: the Jobs API returns environments in that order (else a perpetual plan diff).
+        - environment_key: lakebase
+          spec:
+            environment_version: "4"
+            dependencies:
+              - databricks-sdk==0.170.0
+        - environment_key: ml
+          spec:
+            environment_version: "4"
+            dependencies:
+              - mlflow==3.18.0
+              - databricks-feature-engineering==0.18.4
+              - lightgbm==4.7.0
+              - xgboost==3.4.1
+              - scikit-learn==1.6.1
+              - pyyaml>=6
+      schedule:
+        quartz_cron_expression: "0 0/15 * * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+      tasks:
+        - task_key: pipeline
+          max_retries: 0
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.bigbox_osa_pipeline.id}
+        - task_key: features
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: pipeline}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/01_features.ipynb
+            base_parameters: {catalog: "${var.catalog}", mode: incremental}
+        - task_key: score
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: features}]
+          environment_key: ml
+          notebook_task:
+            notebook_path: ../src/ml/03_score.ipynb
+            base_parameters: {catalog: "${var.catalog}", mode: incremental}
+        - task_key: sync
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          depends_on: [{task_key: score}]
+          environment_key: lakebase
+          spark_python_task:
+            python_file: ../src/lakebase/run_sync.py
+            parameters: ["--catalog", "${var.catalog}"]
+        - task_key: write_back
+          max_retries: 0
+          disable_auto_optimization: true  # serverless would retry despite max_retries: 0
+          environment_key: lakebase
+          spark_python_task:
+            python_file: ../src/lakebase/run_write_back.py
+            parameters: ["--catalog", "${var.catalog}"]

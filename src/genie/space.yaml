@@ -1,0 +1,186 @@
+# Authoring source of the Genie space "Bigbox Stores - Store Ops". `src/genie/space.py build` turns
+# this file and kpi_definitions.md into space.json (the Genie API's serialized_space); `deploy`
+# creates or updates the space from space.json; `export` writes the deployed config back.
+# Catalog-qualified names use ${catalog}, resolved at build time.
+
+title: Bigbox Stores - Store Ops
+description: >-
+  Store operations for Bigbox Stores, a big-box retailer (100 stores, 4 regions, in-store and
+  online): on-shelf availability, stockouts and lost sales, inventory, shrink, sales and returns,
+  supplier fill, tonight's reorder queue and planner decisions. KPIs come from governed metric views.
+
+instructions: |
+  You answer questions from store-operations staff at Bigbox Stores, a big-box retailer with 100 stores
+  (S001..S100) in four regions (CENTRAL, EAST, SOUTH, WEST) and three formats (SUPERCENTER, STANDARD,
+  COMPACT), selling 300 SKUs in 13 categories in store (POS) and online (ship-from-store).
+
+  WHERE TO LOOK
+  - KPIs: always use the metric views with MEASURE(): serving.availability_kpis for availability,
+    stockouts, lost sales, shrink, days of supply, inventory turns, online fill rate and forecast WAPE;
+    serving.sales_kpis for units, revenue, orders, order value, discount, buyers and returns. Never
+    re-implement a KPI from the gold tables when a measure exists; ratios must come from the measure.
+  - Replenishment fill rate (supplier fill) is not in a metric view: compute it on
+    gold.replenishment_fill as sum(received_qty_ea) / sum(ordered_qty) over purchase-order lines whose
+    due_date is in the period.
+  - Tonight's reorder queue: gold.recommendations (one row per store x SKU for the latest snapshot).
+    Queue items are rows with queue_reason IS NOT NULL ('STOCKOUT_RISK' or 'OVERSTOCK'); priority 1 is
+    the most urgent. Money in the queue is recommended_order_value (at cost) or expected_lost_sales.
+  - Planner decisions on the queue: gold.reorder_decisions (action approve / override / reject).
+  - Current on hand: gold.inventory_position (latest hourly snapshot per store x SKU).
+  - Drill-down for "why": gold.store_sku_daily (per store x SKU x day: stockout_hours, closing_on_hand,
+    received_units, on_promo) and gold.replenishment_fill (late or short supplier deliveries).
+
+  DATES
+  - The data covers 2025-10-01 to 2026-10-01. The latest day, 2026-10-01, is the current trading day
+    and is partial (live data until 14:00). Anchor every relative date on the latest date in the data,
+    never on current_date(): today = 2026-10-01, yesterday = 2026-09-30, last week = the last complete
+    Monday-Sunday week (2026-09-21 to 2026-09-27), last month = the last complete calendar month
+    (September 2026), last quarter = Q3 2026 (2026-07-01 to 2026-09-30), "the last three months" =
+    the last three complete months (July to September 2026).
+  - Filter metric views on their date column (date in availability_kpis, sale_date in sales_kpis) with
+    BETWEEN on explicit dates.
+
+  ANSWERS
+  - Return ratios as fractions between 0 and 1 (0.93, not 93); name the column after the KPI.
+  - "Top N" or "worst N" means ORDER BY the KPI and LIMIT N; a single "which ... highest/lowest" means
+    LIMIT 1. Return one row per group asked for and no extra rows.
+  - Answer "why" questions with the KPI first, then the drivers from the drill-down tables.
+
+  TERMS
+  - OOS = out of stock = stockout. OSA = on_shelf_availability. "In-stock rate" = in_stock_pct.
+  - "Fill" or "fill rate" alone means online_fill_rate; "supplier fill", "PO fill" or "replenishment
+    fill" means the replenishment fill rate above.
+  - "Lost sales" in dollars is lost_sales; in units, lost_sales_units.
+  - Shrink means perishable shrink_pct (expired + damaged / received, perishables only).
+
+  KPI DEFINITIONS (implemented once in the metric views; use these meanings)
+
+sample_questions:
+  - Which stores had the lowest on-shelf availability yesterday?
+  - Show tonight's top stockout risks for store S010
+  - How did lost sales trend week by week over the last month?
+  - Which suppliers delivered late most often last month?
+  - What share of planner decisions were overrides?
+
+tables:
+  - identifier: ${catalog}.serving.availability_kpis
+    columns:
+      on_shelf_availability: {synonyms: [OSA, on-shelf availability, shelf availability]}
+      in_stock_pct: {synonyms: [in-stock rate, in stock percentage, in-stock]}
+      stockout_hours: {synonyms: [OOS hours, out-of-stock hours, stockout hours]}
+      lost_sales: {synonyms: [lost revenue, sales lost to stockouts, missed sales]}
+      lost_sales_units: {synonyms: [lost units, units lost to stockouts]}
+      online_fill_rate: {synonyms: [fill, fill rate, online fill]}
+      shrink_pct: {synonyms: [shrink, waste rate, perishable shrink]}
+      days_of_supply: {synonyms: [DoS, days of cover, cover]}
+      inventory_turns: {synonyms: [turns, stock turns]}
+      forecast_wape: {synonyms: [WAPE, forecast error, forecast accuracy error]}
+  - identifier: ${catalog}.serving.sales_kpis
+    columns:
+      total_revenue: {synonyms: [revenue, sales, total sales]}
+      avg_order_value: {synonyms: [AOV, basket value, average basket]}
+      total_orders: {synonyms: [orders, transactions, baskets]}
+      avg_discount: {synonyms: [discount rate, markdown rate]}
+      item_return_rate: {synonyms: [unit return rate, return rate by units]}
+      channel: {synonyms: [in-store vs online, POS or online]}
+  - identifier: ${catalog}.gold.inventory_position
+    columns:
+      on_hand: {synonyms: [stock on hand, current stock, inventory]}
+      next_due_date: {synonyms: [next delivery, next PO due]}
+  - identifier: ${catalog}.gold.recommendations
+    columns:
+      queue_reason: {synonyms: [alert, queue type, risk type], entity_matching: true}
+      recommended_order_qty: {synonyms: [order quantity, suggested order, reorder quantity]}
+      stockout_risk: {synonyms: [OOS risk, probability of stockout]}
+      priority: {synonyms: [queue rank, urgency]}
+  - identifier: ${catalog}.gold.reorder_decisions
+    columns:
+      action: {synonyms: [decision, approve override reject], entity_matching: true}
+      final_qty: {synonyms: [committed quantity, ordered quantity]}
+      decided_by: {synonyms: [planner, user]}
+  - identifier: ${catalog}.gold.replenishment_fill
+    columns:
+      fill_rate: {synonyms: [supplier fill, PO fill rate, replenishment fill]}
+      days_late: {synonyms: [delivery delay, lateness]}
+      supplier_id: {synonyms: [supplier, vendor], entity_matching: true}
+  - identifier: ${catalog}.gold.store_sku_daily
+    columns:
+      stockout_hours: {synonyms: [OOS hours, out-of-stock hours]}
+      closing_on_hand: {synonyms: [closing stock, end of day stock]}
+      category: {entity_matching: true}
+
+join_specs:
+  - left: ${catalog}.gold.reorder_decisions
+    right: ${catalog}.gold.recommendations
+    using: [store_id, sku_id]
+    relationship: MANY_TO_ONE
+  - left: ${catalog}.gold.recommendations
+    right: ${catalog}.gold.inventory_position
+    using: [store_id, sku_id]
+    relationship: ONE_TO_ONE
+  - left: ${catalog}.gold.replenishment_fill
+    right: ${catalog}.gold.inventory_position
+    using: [store_id, sku_id]
+    relationship: MANY_TO_ONE
+
+example_sqls:
+  - question: What were on-shelf availability and lost sales by category yesterday?
+    sql: |
+      SELECT category, MEASURE(on_shelf_availability) AS on_shelf_availability,
+             MEASURE(lost_sales) AS lost_sales
+      FROM ${catalog}.serving.availability_kpis
+      WHERE date = '2026-09-30'
+      GROUP BY category
+      ORDER BY lost_sales DESC
+  - question: Show the weekly in-stock rate in the WEST region for the last 4 weeks
+    sql: |
+      SELECT week, MEASURE(in_stock_pct) AS in_stock_pct
+      FROM ${catalog}.serving.availability_kpis
+      WHERE region = 'WEST' AND date BETWEEN '2026-08-31' AND '2026-09-27'
+      GROUP BY week
+      ORDER BY week
+  - question: What were revenue and orders by store format last quarter?
+    sql: |
+      SELECT format, MEASURE(total_revenue) AS total_revenue, MEASURE(total_orders) AS total_orders
+      FROM ${catalog}.serving.sales_kpis
+      WHERE sale_date BETWEEN '2026-07-01' AND '2026-09-30'
+      GROUP BY format
+      ORDER BY total_revenue DESC
+  - question: Which 10 stores had the worst supplier fill on orders due last week?
+    sql: |
+      SELECT store_id, sum(received_qty_ea) / sum(ordered_qty) AS replenishment_fill_rate,
+             sum(IF(days_late > 0, 1, 0)) AS late_lines
+      FROM ${catalog}.gold.replenishment_fill
+      WHERE due_date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY store_id
+      ORDER BY replenishment_fill_rate
+      LIMIT 10
+  - question: Show tonight's top 20 stockout-risk items for store S010
+    sql: |
+      SELECT priority, sku_id, category, on_hand, on_order_units, stockout_risk,
+             expected_lost_sales, recommended_order_qty
+      FROM ${catalog}.gold.recommendations
+      WHERE store_id = 'S010' AND queue_reason = 'STOCKOUT_RISK'
+      ORDER BY priority
+      LIMIT 20
+  - question: What is the override rate of planner decisions by region?
+    sql: |
+      SELECT region, avg(IF(action = 'override', 1.0, 0.0)) AS override_rate, count(*) AS decisions
+      FROM ${catalog}.gold.reorder_decisions
+      GROUP BY region
+      ORDER BY region
+  - question: Why did store S007 lose sales last week?
+    sql: |
+      SELECT sku_id, category, MEASURE(lost_sales) AS lost_sales,
+             MEASURE(stockout_hours) AS stockout_hours, MEASURE(on_shelf_availability) AS on_shelf_availability
+      FROM ${catalog}.serving.availability_kpis
+      WHERE store_id = 'S007' AND date BETWEEN '2026-09-21' AND '2026-09-27'
+      GROUP BY sku_id, category
+      ORDER BY lost_sales DESC
+      LIMIT 10
+  - question: Which items in the EAST region are out of stock now with no delivery on order?
+    sql: |
+      SELECT store_id, sku_id, category, avg_daily_units_28d
+      FROM ${catalog}.gold.inventory_position
+      WHERE region = 'EAST' AND on_hand = 0 AND next_due_date IS NULL
+      ORDER BY avg_daily_units_28d DESC
