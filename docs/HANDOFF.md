@@ -25,6 +25,10 @@ in sync: upload with `workspace import --overwrite`, then export and `cmp` to ve
 - **Nothing is committed yet.** The user said to hold the first commit until they say so. The private denylist for
   `scripts/prepush_check.sh` (`../working/denylist.private.txt`) will come from the user; it doesn't exist yet.
 - The customer is described by industry only. The public name is "Bigbox Stores".
+- **Repo:** https://github.com/riteshpatel-db/bigbox-stores-osa (public, personal account; the EMU account can't own
+  public repos). Commit as `riteshpatel-db <ritesh.patel@databricks.com>` (repo-local git config); remote `origin` =
+  `git@github-personal:riteshpatel-db/bigbox-stores-osa.git` (SSH key `~/.ssh/github_personal`). Run
+  `scripts/prepush_check.sh` before every push; push only when the user asks.
 - **`uv.lock` is gitignored** (user's decision, 2026-11-26): it records an internal package-proxy host for every
   download. Dev tool versions resolve from `pyproject.toml`; the jobs pin their own versions in the bundle and the app
   has its own `package-lock.json` (public npm registry). The private denylist exists: `../working/denylist.private.txt`.

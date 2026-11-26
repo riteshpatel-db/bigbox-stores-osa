@@ -8,7 +8,7 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 DENYLIST="${DENYLIST:-../working/denylist.private.txt}"
-EXPECTED_AUTHOR="ritesh-patel_data <ritesh.patel@databricks.com>"
+EXPECTED_AUTHOR="riteshpatel-db <ritesh.patel@databricks.com>"
 fail=0
 
 if [[ ! -s "$DENYLIST" ]] || ! grep -qv '^[[:space:]]*$' "$DENYLIST"; then

@@ -9,7 +9,7 @@ Where this build ran, who ran it, what it creates, and what it must not touch.
 | Built with | Claude Code (Opus 5.5), pairing with the repo owner |
 | Session / conversation id | `bf191158-6010-4280-a63c-eedf77cd5b33` |
 | Preflight run | 2026-10-30, 22:40–22:42 UTC |
-| Git author | `ritesh-patel_data <ritesh.patel@databricks.com>` (GitHub EMU account, `gh` authenticated over SSH) |
+| Git author | `riteshpatel-db <ritesh.patel@databricks.com>` (personal GitHub account; repo https://github.com/riteshpatel-db/bigbox-stores-osa, public; pushed over SSH host alias `github-personal`). The EMU account `ritesh-patel_data` cannot own public repos. |
 
 ## Workspace
 
