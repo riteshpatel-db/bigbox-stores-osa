@@ -87,7 +87,7 @@ Workspace `https://fevm-serverless-stable-ritesh.cloud.databricks.com`, id `7474
 | Decisions | Postgres `app.reorder_decisions` (insert-only, CHECKs) → Delta `gold.reorder_decisions` (row filter); 20 rows `decided_by = 'stage-d-evidence'` | DDL `src/lakebase/01_app_schema.sql`, `src/governance/02b_lakebase_tables.sql` |
 | Job | `bigbox_lakebase_check` (seed → write_back → verify → write_back_again; no schedule) | `224787984707293` |
 | Genie space | "Bigbox Stores - Store Ops" on `FE_BAR_Ritesh` (owner's space; config `src/genie/space.json`) | `01f1e884bece1d39994e9ba5a98ab5f1` |
-| App | `bigbox-ops-app`, https://bigbox-ops-app-7474657773731312.aws.databricksapps.com (**RUNNING** since 2026-11-26 07:43 UTC, at the user's request; it bills while running. After a stop, `databricks apps start bigbox-ops-app` brings the compute back with no active deployment ("App has not been deployed yet"), so follow it with `databricks bundle run bigbox_ops_app`) | SP `app-2pidc0 bigbox-ops-app` = `3bb6052f-81da-45ab-9170-e84a4eef772e`; deployment `01f1e96d0b7c1a069457b0acd2746ec2` (2026-11-26; the evidence run's was `01f1e88ea44818f3bb030b4b21ab7e58`) |
+| App | `bigbox-ops-app`, https://bigbox-ops-app-7474657773731312.aws.databricksapps.com (compute **STOPPED** again on 2026-11-26 at the user's request; it bills while running. After a stop, `databricks apps start bigbox-ops-app` brings the compute back with no active deployment ("App has not been deployed yet"), so follow it with `databricks bundle run bigbox_ops_app`) | SP `app-2pidc0 bigbox-ops-app` = `3bb6052f-81da-45ab-9170-e84a4eef772e`; deployment `01f1e96d0b7c1a069457b0acd2746ec2` (2026-11-26; the evidence run's was `01f1e88ea44818f3bb030b4b21ab7e58`) |
 
 **Not created yet:** agent endpoint (P1). Their approved names are in
 `docs/PROVENANCE.md`. Add each to the table above, with its id (and the URL, for the app), as soon as it exists.
@@ -204,14 +204,22 @@ Add each later stage's run command here once that stage exists.
    - committed and pushed to the public repo (`main`); any further push only on request, after `prepush_check.sh`;
    - the stage-F override follow-up (reject an "override" equal to the recommendation) was declined by the user on
      2026-11-26: a known limitation, not a to-do;
+   - Paused on 2026-11-26. Done that day: business case, rubric audit (`docs/RUBRIC_AUDIT.md`), README "How AI was
+     used", Google Slides deck (20 slides, private: "Bigbox Stores - business deck (draft)") and the roleplay talk
+     track Google Doc (private) with matching speaker notes. Deck and talk-track sources: `../working/deck/`
+     (`build_deck.py`, then `notes_deck.py`, which must re-run after every rebuild; `talk_track.py` writes the Doc).
+   - `deck/deck.pdf` exported from the Slides deck on 2026-11-26 (its master's off-slide colour-palette group was
+     deleted first: it leaked hidden text into every PDF page). `deck/deck.md` is the older text deck and differs.
+   - Open, the user's call: whether to align or drop `deck/deck.md` (FE Bar deadline November 30); the remaining audit gaps (`docs/RUBRIC_AUDIT.md` section 3, cheapest first: G10, G11, G19, G5);
+     the AI roleplay (prepare from the talk-track Doc; restart the app and warm the endpoint first).
    - P1 items only if the user asks (BUILD_PROMPT §7), cheapest first.
    Regenerate the index whenever an evidence file changes: `uv run python scripts/evidence_index.py &&
    uv run python scripts/check_evidence.py`. Cost evidence: `uv run python scripts/evidence_cost.py --refresh-run
    387755722703731 --train-run 311784219823432 --warehouse-id d5b43df809d40fcf --out evidence/07_cost.md`. Business case (same run ids, after 07): `uv run python
    tools/value_model_business_case.py --refresh-run 387755722703731 --train-run 311784219823432 --warehouse-id
    d5b43df809d40fcf`.
-3. The app was restarted on 2026-11-26 (`apps start`, then `bundle run bigbox_ops_app`); stop it when the demo is done
-   (`databricks apps stop bigbox-ops-app`). Before a demo, warm the endpoint with one what-if: the first call after scale-to-zero took
+3. The app is stopped (2026-11-26). To restart: `databricks apps start bigbox-ops-app`, then
+   `databricks bundle run bigbox_ops_app` (start alone leaves no active deployment); stop it after the demo. Before a demo, warm the endpoint with one what-if: the first call after scale-to-zero took
    ~58 s.
 
 ## Traps that already cost time
