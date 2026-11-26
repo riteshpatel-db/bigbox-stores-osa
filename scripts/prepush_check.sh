@@ -29,7 +29,12 @@ fi
 echo "2/3 secret patterns in full history"
 secret_re='dapi[0-9a-f]{32}|dose[0-9a-f]{32}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
 secret_re+='|xox[abpr]-[0-9A-Za-z-]{10,}|gh[pousr]_[0-9A-Za-z]{36}'
-secret_re+='|(password|secret|token)[[:space:]]*[:=][[:space:]]*["'"'"']?[^[:space:]"'"'"']{8,}'
+# A literal assigned to a password / secret / token: quoted (8+ characters, also as a JSON or YAML
+# key), or an env-style KEY=value line whose value is not computed ($, (, {). Code that assigns a
+# value obtained at runtime (e.g. `token = client.get_token()`) does not match; the earlier, broader
+# pattern flagged such lines (four in the first commit, all runtime values, none a secret).
+secret_re+='|(password|secret|token)[A-Za-z_]*["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^[:space:]"'"'"']{8,}["'"'"']'
+secret_re+='|^[+ ]?[[:space:]]*(export[[:space:]]+)?[A-Z_]*(PASSWORD|SECRET|TOKEN)[A-Z_]*=[^[:space:]$({"'"'"']{8,}'
 if grep -iqE "$secret_re" <<<"$history"; then
   grep -inE "$secret_re" <<<"$history" | cut -c1-120
   echo "FAIL: possible secret in history."

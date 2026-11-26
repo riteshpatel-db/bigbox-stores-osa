@@ -238,7 +238,10 @@ Add each later stage's run command here once that stage exists.
 6. **The pre-push denylist check silently passed.** In `prepush_check.sh` a pipe and a here-string both fed grep's
    stdin, so the patterns were read from the history instead of the denylist, and a planted term was **not** caught.
    A negative test in a throwaway `/tmp` copy found it; the fix is `grep -f <(...)`. Whenever that script changes,
-   re-run all 4 cases (missing denylist, clean, planted term, planted secret plus wrong author) in a `/tmp` copy.
+   re-run all 4 cases (missing denylist, clean, planted term, planted secret plus wrong author) in a `/tmp` copy. On 2026-11-26 the secret pattern was tightened (the broad `(password|secret|token) = 8+ chars` flagged 4
+   runtime assignments, none a secret): it now needs a quoted literal or an env-style `KEY=value` that isn't computed.
+   Planted secrets can't be committed past the global secret-scan hook, so test the pattern on sample lines (6
+   planted shapes must match, the 4 runtime lines must not) and the other cases with throwaway commits.
 
 7. **The agent's git-hook guard blocks some harmless commands.** A command containing `bash -n` and
    `git add --dry-run` was rejected as "bypassing git hooks with --no-verify". Avoid `-n`-style flags near git
