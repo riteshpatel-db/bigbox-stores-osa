@@ -120,6 +120,50 @@ above has not been replayed from an empty workspace.
 - **Synced rows.** All of tonight's store × SKUs are synced, not only the queue, because the triggered
   sync needs a change-data-feed table and the what-if needs any item's features.
 
+## How AI was used
+
+**Tools.** Claude Code (Opus 5.5) built this repository end to end, pairing with its owner. It worked in a
+terminal against the workspace through the Databricks CLI (named profile, no tokens in the repo) and the
+Google APIs for the deck. The session id is in [`docs/PROVENANCE.md`](docs/PROVENANCE.md). An earlier
+session with another agent wrote the scope; its id was not recorded.
+
+**Pattern.**
+1. **Scope:** the problem in the buyer's words, KPIs, stages, priorities and risks.
+2. **Written brief:** a single build brief (constraints, approved resource names, the exact KPI
+   definitions, each stage's *Builds* and *Evidence →*).
+3. **Build stage by stage:** each stage ships with a script that queries the live result and writes
+   `evidence/NN_<stage>.md`; nothing is pasted by hand.
+4. **Audit against the bar:** [`docs/RUBRIC_AUDIT.md`](docs/RUBRIC_AUDIT.md) grades every requirement
+   from literal greps, a fresh clone and live workspace checks.
+
+**Guardrails given to the agent** (excerpts from the owner's rules):
+- "The evaluator reads text only. … Source code alone fails the Build domain."
+- "Every number traces to something. … Generate numbers with scripts; never type them."
+- "Record failures."
+- "Verify, don't trust. Re-read what was written; test the deployed thing, not only the code."
+- "Ask before anything destructive or shared."
+
+**How they were enforced.**
+- New resources only from an approved list, with each approval recorded in `docs/PROVENANCE.md`.
+- The shared workspace's inventory is diffed before and after every session.
+- `scripts/check_evidence.py` enforces the evidence limits and headers.
+- `scripts/prepush_check.sh` scans the full history for the private customer denylist, secrets and
+  commit authors before any push.
+- Commits and pushes happen only when the owner asks.
+
+**What the human did.** Chose the problem and the KPIs. Approved every resource name, cost and push.
+Ran the interactive sign-ins and a real session in the deployed app. Decided the trade-offs the agent
+raised, for example to keep the known override limitation.
+
+**What the agent got wrong, and how it was caught.** Its own checks caught most of it. Testing showed:
+- a pre-push check that passed silently;
+- an evidence hash that skipped single files;
+- a KPI with two definitions;
+- an untested claim carried over from planning.
+
+The audit then found the rest (see [What went wrong](#what-went-wrong-and-the-fixes) and
+[`docs/RUBRIC_AUDIT.md`](docs/RUBRIC_AUDIT.md)).
+
 ## What went wrong, and the fixes
 
 Every failure is logged with its fix in the build log; the ones that shaped the build:
